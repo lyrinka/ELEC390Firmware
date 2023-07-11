@@ -1,0 +1,23 @@
+#include <stm32g071xx.h>
+
+
+void LPUART1_Init(void) {
+	// Clock LPUART1 from LSE
+	RCC->CCIPR = RCC->CCIPR & 0xFFFFF3FF | 0x00000C00; 
+	
+	// Enable UART Pins:
+	// PA2: BLE Rx, MCU Tx, AF6 (LPUART1TX)
+	// PA3: BLE Tx, MCU Rx, AF6 (LPUART1RX)
+	// No cross wiring
+	GPIOA->AFR[0] = GPIOA->AFR[0] & 0xFFFF00FF | 0x00006600; 
+	GPIOA->MODER = GPIOA->MODER & 0xFFFFFF0F | 0x000000A0; 
+	
+	// Enable and reset LPUART1 peripheral
+	RCC->APBENR1  |= RCC_APBENR1_LPUART1EN; 
+	RCC->APBRSTR1 |= RCC_APBRSTR1_LPUART1RST; 
+	RCC->APBRSTR1 &=~RCC_APBRSTR1_LPUART1RST; 
+	
+	LPUART1->BRR = 0x368; 
+	LPUART1->CR1 = 0x0D; 
+	
+}

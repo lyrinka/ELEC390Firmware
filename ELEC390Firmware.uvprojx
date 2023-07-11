@@ -405,6 +405,11 @@
               <FileType>5</FileType>
               <FilePath>.\Library\libsys.h</FilePath>
             </File>
+            <File>
+              <FileName>liblpuart1.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\liblpuart1.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -422,6 +427,26 @@
               <FileName>libpacket.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Library\libpacket.h</FilePath>
+            </File>
+            <File>
+              <FileName>libfifo.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libfifo.c</FilePath>
+            </File>
+            <File>
+              <FileName>libfifo.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libfifo.h</FilePath>
+            </File>
+            <File>
+              <FileName>libprotocol.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libprotocol.c</FilePath>
+            </File>
+            <File>
+              <FileName>libprotocol.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libprotocol.h</FilePath>
             </File>
           </Files>
         </Group>
