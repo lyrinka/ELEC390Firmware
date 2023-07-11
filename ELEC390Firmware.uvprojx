@@ -412,6 +412,13 @@
         </Group>
         <Group>
           <GroupName>Protocol</GroupName>
+          <Files>
+            <File>
+              <FileName>libpacket.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libpacket.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>::CMSIS</GroupName>
