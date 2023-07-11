@@ -27,6 +27,7 @@ extern int Packet_Encode(const Packet_t * obj, int (*consumer)(void * context, u
 #define PACKET_DECODE_SUCCESS 0
 #define PACKET_DECODE_PRODUCER_EMPTY 1
 #define PACKET_DECODE_CORRUPTED 2
-extern int Packet_Decode(Packet_t * obj, int (*producer)(void * context), void * context); 
+#define PACKET_DECODE_BUFFER_TOO_SMALL 3
+extern int Packet_Decode(Packet_t * obj, int buflen, int (*producer)(void * context), void * context); 
 
 #endif

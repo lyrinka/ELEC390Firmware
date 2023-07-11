@@ -103,8 +103,7 @@ int Packet_Encode(const Packet_t * obj, int (*consumer)(void * context, unsigned
 
 // Packet decode method reads from a byte-oriented producer and attempts to parse a packet. 
 // The producer shall return one byte on success and -1 when the producer cannot produce output data. 
-// TODO: array out of bounds check
-int Packet_Decode(Packet_t * obj, int (*producer)(void * context), void * context) {
+int Packet_Decode(Packet_t * obj, int buflen, int (*producer)(void * context), void * context) {
 	int payloadLength; 
 	int packetWriterIndex = -2; 
 	unsigned char packetCRC = 0xFF; 
@@ -126,6 +125,8 @@ int Packet_Decode(Packet_t * obj, int (*producer)(void * context), void * contex
 			}
 			else if(packetWriterIndex == -1) {
 				payloadLength = data; 
+				if(buflen < payloadLength)
+					return PACKET_DECODE_BUFFER_TOO_SMALL; 
 				obj->len = data; 
 				packetWriterIndex = 0; 
 			}
