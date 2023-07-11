@@ -1,6 +1,10 @@
 #include "libpacket.h"
 
-static unsigned int fastmod(unsigned int * pN) {
+// Fastmod93 takes the pointer to a number N and performs the following integer operations: 
+// R := N % 93
+// N := N / 93
+// N is updated via reference and R is returned. 
+static unsigned int fastmod93(unsigned int * pN) {
 	unsigned int N = *pN; 
 	unsigned int d = ((unsigned long long)N * 1616385542) >> 32; 
 	unsigned int Q = (((N - d) >> 1) + d) >> 6; 
@@ -9,19 +13,22 @@ static unsigned int fastmod(unsigned int * pN) {
 	return R; 
 }
 
+// Base93 Encoder takes an array of 4 bytes and encodes as 5 characters. 
 static void base93Encode(const unsigned char * input4, unsigned char * output5) {
 	unsigned int N, R; 
 	N	 = input4[3]; N <<= 8; 
 	N |= input4[2]; N <<= 8; 
 	N |= input4[1]; N <<= 8; 
 	N |= input4[0]; 
-	R = fastmod(&N) + '!'; if(R >= '+') R++; output5[0] = R; 
-	R = fastmod(&N) + '!'; if(R >= '+') R++; output5[1] = R; 
-	R = fastmod(&N) + '!'; if(R >= '+') R++; output5[2] = R; 
-	R = fastmod(&N) + '!'; if(R >= '+') R++; output5[3] = R; 
+	R = fastmod93(&N) + '!'; if(R >= '+') R++; output5[0] = R; 
+	R = fastmod93(&N) + '!'; if(R >= '+') R++; output5[1] = R; 
+	R = fastmod93(&N) + '!'; if(R >= '+') R++; output5[2] = R; 
+	R = fastmod93(&N) + '!'; if(R >= '+') R++; output5[3] = R; 
 	N += '!'; 						 if(N >= '+') N++; output5[4] = N; 
 }
 
+// Base93 Decoder takes an array of 5 characters and decodes as 4 bytes. 
+// This method does not attempt to check input characters against valid range. 
 static void base93Decode(const unsigned char * input5, unsigned char * output4) {
 	unsigned int R, N; 
 	N = input5[4]; if(N >= '+') N--; N -= '!'; 
@@ -35,6 +42,10 @@ static void base93Decode(const unsigned char * input5, unsigned char * output4) 
 	output4[3] = N; 
 }
 
+// CRC8 consumer merges input to a 8-bit CRC register, passed by reference. 
+// The CRC polynomial implemented is 0x1D (SAE J1850). 
+// As per J1850, the initial value shall be 0xFF and the result CRC value shall be inverted. 
+// Reference: http://www.sunshine2k.de/coding/javascript/crc/crc_js.html
 static void crc8Accept(unsigned char * pcrc, unsigned char input) {
 	unsigned int crc = *pcrc; 
 	crc ^= input; 
@@ -45,7 +56,8 @@ static void crc8Accept(unsigned char * pcrc, unsigned char input) {
 	*pcrc = crc; 
 }
 
-
+// Packet encode method reads a packet and passes encoded charaters to a byte-oriented consumer. 
+// The consumer shall return 0 on success and 1 when the consumer cannot accept input data. 
 int Packet_Encode(const Packet_t * obj, int (*consumer)(void * context, unsigned char data), void * context) {
 	int payloadLength = obj->len; 
 	int packetReaderIndex = -2; 
@@ -89,6 +101,9 @@ int Packet_Encode(const Packet_t * obj, int (*consumer)(void * context, unsigned
 	}
 }
 
+// Packet decode method reads from a byte-oriented producer and attempts to parse a packet. 
+// The producer shall return one byte on success and -1 when the producer cannot produce output data. 
+// TODO: array out of bounds check
 int Packet_Decode(Packet_t * obj, int (*producer)(void * context), void * context) {
 	int payloadLength; 
 	int packetWriterIndex = -2; 
