@@ -30,6 +30,8 @@ void delayms(int ms) {
 int long_press_counter = 0; 
 void shutdown(void); 
 
+int flash_enabled = 0; 
+
 int main(void) {
 	Sys_Init(); 
 	
@@ -65,8 +67,11 @@ int main(void) {
 		delayms(160); 
 		
 		if(!(GPIOA->IDR & 0x0001)) { // BTN MAIN
+			if(long_press_counter == 0) {
+				flash_enabled = !flash_enabled; 
+			}
 			long_press_counter++; 
-			if(long_press_counter > 4) 
+			if(long_press_counter > 3) 
 				shutdown(); 
 		}
 		else {
@@ -139,10 +144,10 @@ void test(void) {
 
 int serial_consumer(void * context, unsigned char data); 
 void test_send_packet(void) {
-	GPIOB->BRR = 1; 
+	if(flash_enabled)
+		GPIOB->BRR = 1; 
 	meas_uv = LTR390_Meas_UV(); 
 	meas_vis = LTR390_Meas_VIS(); 
-	GPIOB->BSRR = 1; 
 	
 	unsigned char buffer[6]; 
 	Packet_t packet; 
@@ -162,6 +167,7 @@ void test_send_packet(void) {
 	Packet_Encode(&packet, serial_consumer, 0); 
 	serial_consumer(0, '\r'); 
 	serial_consumer(0, '\n'); 
+	GPIOB->BSRR = 1; 
 }
 
 int serial_consumer(void * context, unsigned char data) {
