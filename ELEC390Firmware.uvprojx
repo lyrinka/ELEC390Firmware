@@ -405,6 +405,16 @@
               <FileType>5</FileType>
               <FilePath>.\Library\libtask.h</FilePath>
             </File>
+            <File>
+              <FileName>libhandler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libhandler.c</FilePath>
+            </File>
+            <File>
+              <FileName>libhandler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libhandler.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

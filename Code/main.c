@@ -1,6 +1,7 @@
 #include <stm32g071xx.h>
 
 #include "libsys.h"
+#include "libhandler.h"
 #include "libtask.h"
 
 void delayms(int ms) {
@@ -14,12 +15,19 @@ void delayms(int ms) {
 }
 
 unsigned char stack2[512]; 
+unsigned char stack3[512]; 
+unsigned char memory1[1024]; 
+
+
 Task_t task2; 
 void task2_func(Task_t * self); 
 
-unsigned char stack3[512]; 
 Task_t task3; 
 void task3_func(Task_t * self); 
+
+void callback1(Handler_t *, unsigned int); 
+void callback2(Handler_t *, unsigned int); 
+void callback3(Handler_t *, unsigned int); 
 
 int main(void) {
 	Sys_Init(); 
@@ -33,18 +41,44 @@ int main(void) {
 	Task_InitializeTask(&task2, stack2, sizeof(stack2), task2_func); 
 	Task_InitializeTask(&task3, stack3, sizeof(stack3), task3_func); 
 	
-	int count = 0; 
+	Handler_t rootHandler; 
+	
+	Handler_Init(&rootHandler, memory1, sizeof(memory1)); 
+	Handler_Post(&rootHandler, callback1, 0); 
+	
 	while(1) {
-		LED_Blue_On(); 
-		delayms(100); 
-		LED_Blue_Off(); 
-		delayms(900); 
-		if(++count & 0x1) 
-			Task_Dispatch(&task2); 
-		else
-			Task_Dispatch(&task3); 
+		int status = Handler_Execute(&rootHandler); 
+		if(status == HANDLER_EXECUTOR_EMPTY) {
+			LED_Green_On(); 
+			for(int i = 0; i < 100; i++); 
+		}
+		else LED_Green_Off(); 
 	}
 }
+
+void callback1(Handler_t * handler, unsigned int param) {
+	LED_Blue_On(); 
+	delayms(100); 
+	LED_Blue_Off(); 
+	delayms(400); 
+	Handler_Post(handler, callback2, param); 
+	Handler_Post(handler, callback2, param); 
+}
+
+void callback2(Handler_t * handler, unsigned int param) {
+	LED_Red_On(); 
+	delayms(100); 
+	LED_Red_Off(); 
+	delayms(400); 
+	Handler_Post(handler, callback3, param); 
+}
+
+
+void callback3(Handler_t * handler, unsigned int param) {
+	if(++param > 5) return; 
+	Handler_Post(handler, callback1, param); 
+}
+
 
 void task2_func(Task_t * self) {
 	while(1) {
