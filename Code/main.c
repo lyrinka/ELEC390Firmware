@@ -1,22 +1,22 @@
 #include <stm32g071xx.h>
 
-#include "libsys.h"
 #include "libhandler.h"
 #include "libtask.h"
 
+#include "libsys.h"
 #include "libi2c.h"
 
-void delayms(int); 
-
-unsigned char DAQTaskStack[512]; 
-unsigned char RootHandlerBackedStorage[1024]; 
-
-
-Task_t DAQTask; 
-Handler_t RootHandler; 
-
+#include "looper.h"
 
 #define I2C_ADDR_LTR390 0xA6
+
+unsigned char DAQTaskStack[512]; 
+Task_t DAQTask; 
+
+unsigned int meas_uv; 
+unsigned int meas_vis; 
+
+void delayms(int); 
 
 void I2C_WriteSingleRegister(unsigned char devaddr, unsigned char regaddr, unsigned char data) {
 	unsigned char buf[1]; 
@@ -68,25 +68,21 @@ unsigned int LTR390_Meas_VIS(void) {
 	return I2C_ReadRegisters3(I2C_ADDR_LTR390, 0x0D); 	
 }
 
-
-
 void callbackRunDAQ(Handler_t * handler, unsigned int param) {
 	Task_Dispatch(&DAQTask); 
 }
 
 void I2C_StateChangeCallback(int error) {
-	Handler_Post(&RootHandler, callbackRunDAQ, error); 
+	Handler_Post(&MainLooper.handler, callbackRunDAQ, error); 
 }
 
 void DAQTaskFunc(Task_t * self) {
 	for(;;) {
-		unsigned int uvi = LTR390_Meas_UV(); 
-		unsigned int vis = LTR390_Meas_VIS(); 
+		meas_uv = LTR390_Meas_UV(); 
+		meas_vis = LTR390_Meas_VIS(); 
 		__nop(); 
 	}
 }
-
-
 
 int main(void) {
 	Sys_Init(); 
@@ -98,21 +94,9 @@ int main(void) {
 	Task_Init(); 
 	Task_InitializeTask(&DAQTask, DAQTaskStack, sizeof(DAQTaskStack), DAQTaskFunc); 
 	
-	Handler_Init(&RootHandler, RootHandlerBackedStorage, sizeof(RootHandlerBackedStorage)); 
-	
-	Handler_Post(&RootHandler, callbackRunDAQ, 0); 
-	
-	while(1) {
-		int status = Handler_Execute(&RootHandler); 
-		if(status == HANDLER_EXECUTOR_EMPTY) {
-			LED_Green_Off(); 
-			for(int i = 0; i < 100; i++); 
-		}
-		else LED_Green_On(); 
-	}
+	MainLooper_Entry(callbackRunDAQ); 
+	while(1); 
 }
-
-
 
 void delayms(int ms) {
 	SysTick->CTRL = 0x4; 

@@ -2,6 +2,9 @@
 
 #include "libhandler.h"
 
+// Profiling only, will be removed
+#include "libsys.h"
+
 typedef struct HandlerRunnable_s {
 	void (*runnable)(Handler_t * handler, unsigned int param); 
 	unsigned int param; 
@@ -37,7 +40,7 @@ void Handler_Post(Handler_t * handler, void (*runnable)(Handler_t * handler, uns
 	HandlerRunnable_t * element = &handler->queue[head]; 
 	if(++head >= handler->capacity) head = 0; 
 	handler->head = head; 
-	if(handler->size++ > handler->maxSizeReached) 
+	if(++handler->size > handler->maxSizeReached) 
 		handler->maxSizeReached = handler->size; 
 	element->runnable = runnable; 
 	element->param = param; 
@@ -56,6 +59,9 @@ int Handler_Execute(Handler_t * handler) {
 	handler->tail = tail; 
 	handler->size--;
 	critExit(); 
+	// LED toggling for profiling, will be removed
+	LED_Green_On(); 
 	element.runnable(handler, element.param); 
+	LED_Green_Off(); 
 	return HANDLER_EXECUTOR_PERFORMED; 
 }
