@@ -3,37 +3,6 @@
 #include "libsys.h"
 #include "libtask.h"
 
-void LED_Init(void) {
-	GPIOB->BSRR = 0x0001; 
-	GPIOB->MODER = GPIOB->MODER & 0xFFFFFFFC | 0x00000001; 
-	GPIOA->BSRR = 0x00C0; 
-	GPIOA->MODER = GPIOA->MODER & 0xFFFF0FFF | 0x00005000; 
-}
-
-void LED_Red_On(void) {
-	GPIOA->BRR = 0x0080; 
-}
-
-void LED_Red_Off(void) {
-	GPIOA->BSRR = 0x0080; 
-}
-
-void LED_Green_On(void) {
-	GPIOA->BRR = 0x0040; 
-}
-
-void LED_Green_Off(void) {
-	GPIOA->BSRR = 0x0040; 
-}
-
-void LED_Blue_On(void) {
-	GPIOB->BRR = 0x0001; 
-}
-
-void LED_Blue_Off(void) {
-	GPIOB->BSRR = 0x0001; 
-}
-
 void delayms(int ms) {
 	SysTick->CTRL = 0x4; 
 	SysTick->LOAD = 999; 
@@ -55,7 +24,6 @@ void task3_func(Task_t * self);
 int main(void) {
 	Sys_Init(); 
 	
-	LED_Init(); 
 	LED_Blue_On(); 
 	while(!Sys_LSEReady()); 
 	LED_Blue_Off(); 

@@ -11,4 +11,11 @@ extern void Sys_SensorOff(void);
 extern void Sys_BluetoothOn(void); 
 extern void Sys_BluetoothOff(void); 
 
+extern void LED_Red_On(void); 
+extern void LED_Red_Off(void); 
+extern void LED_Green_On(void); 
+extern void LED_Green_Off(void); 
+extern void LED_Blue_On(void); 
+extern void LED_Blue_Off(void); 
+
 #endif

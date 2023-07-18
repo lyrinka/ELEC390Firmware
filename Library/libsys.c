@@ -9,7 +9,7 @@
 		- Necessary system GPIO configurations
 */
 void Sys_Init(void) {
-	// Enable core peripherals
+	/* -------- Enable core peripherals -------- */
 	RCC->AHBENR  |= RCC_AHBENR_FLASHEN; 
 	RCC->APBENR1 |= RCC_APBENR1_PWREN; 
 	RCC->APBENR2 |= RCC_APBENR2_SYSCFGEN; 
@@ -58,6 +58,12 @@ void Sys_Init(void) {
 	GPIOF->MODER = GPIOF->MODER & 0xFFFFFFF0 | 0x0000005; 
 	GPIOF->BSRR = 0x0003; 
 	
+	// LED (as GPIO):
+	GPIOA->BSRR = 0x00C0; 
+	GPIOB->BSRR = 0x0001; 
+	GPIOA->MODER = GPIOA->MODER & 0xFFFF0FFF | 0x00005000; 
+	GPIOB->MODER = GPIOB->MODER & 0xFFFFFFFC | 0x00000001; 
+	
 	// TODO: properly power up peripherals
 	Sys_SensorOn(); 
 	Sys_BluetoothOn(); 
@@ -92,3 +98,32 @@ void Sys_BluetoothOff(void) {
 	GPIOF->BRR = 0x0003; 
 }
 
+void LED_Red_On(void) {
+	GPIOA->MODER = GPIOA->MODER & 0xFFFF3FFF | 0x00004000; 
+	GPIOA->BRR = 0x0080; 
+}
+
+void LED_Red_Off(void) {
+	GPIOA->MODER = GPIOA->MODER & 0xFFFF3FFF | 0x00004000; 
+	GPIOA->BSRR = 0x0080; 
+}
+
+void LED_Green_On(void) {
+	GPIOA->MODER = GPIOA->MODER & 0xFFFFCFFF | 0x00001000; 
+	GPIOA->BRR = 0x0040; 
+}
+
+void LED_Green_Off(void) {
+	GPIOA->MODER = GPIOA->MODER & 0xFFFFCFFF | 0x00001000; 
+	GPIOA->BSRR = 0x0040; 
+}
+
+void LED_Blue_On(void) {
+	GPIOB->MODER = GPIOB->MODER & 0xFFFFFFFC | 0x00000001; 
+	GPIOB->BRR = 0x0001; 
+}
+
+void LED_Blue_Off(void) {
+	GPIOB->MODER = GPIOB->MODER & 0xFFFFFFFC | 0x00000001; 
+	GPIOB->BSRR = 0x0001; 
+}
