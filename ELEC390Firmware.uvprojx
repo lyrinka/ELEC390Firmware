@@ -393,6 +393,21 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>OS</GroupName>
+          <Files>
+            <File>
+              <FileName>libtask.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libtask.c</FilePath>
+            </File>
+            <File>
+              <FileName>libtask.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libtask.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>HAL</GroupName>
           <Files>
             <File>
@@ -475,5 +490,14 @@
       </file>
     </files>
   </RTE>
+
+  <LayerInfo>
+    <Layers>
+      <Layer>
+        <LayName>ELEC390Firmware</LayName>
+        <LayPrjMark>1</LayPrjMark>
+      </Layer>
+    </Layers>
+  </LayerInfo>
 
 </Project>
