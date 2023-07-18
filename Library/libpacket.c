@@ -24,7 +24,7 @@ static void base93Encode(const unsigned char * input4, unsigned char * output5) 
 	R = fastmod93(&N) + '!'; if(R >= '+') R++; output5[1] = R; 
 	R = fastmod93(&N) + '!'; if(R >= '+') R++; output5[2] = R; 
 	R = fastmod93(&N) + '!'; if(R >= '+') R++; output5[3] = R; 
-	N += '!'; 						 if(N >= '+') N++; output5[4] = N; 
+	N += '!'; 						 	 if(N >= '+') N++; output5[4] = N; 
 }
 
 // Base93 Decoder takes an array of 5 characters and decodes as 4 bytes. 
