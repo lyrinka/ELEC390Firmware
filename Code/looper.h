@@ -4,6 +4,9 @@
 #include "libhandler.h"
 #include "libscheduler.h"
 
+#define MAINLOOPER_HANDLER_QUEUE_SIZE 128
+#define MAINLOOPER_SCHEDULER_HEAP_SIZE 8
+
 typedef struct {
 	Handler_t handler; 
 	Scheduler_t scheduler; 
@@ -12,6 +15,12 @@ typedef struct {
 
 extern Looper_t MainLooper; 
 
-extern void MainLooper_Entry(void * func); 
+extern void MainLooper_Init(void); 
+
+extern void MainLooper_Entry(void); 
+
+#define MainLooper_Submit(runnable) Handler_Submit(&MainLooper.handler, runnable)
+#define MainLooper_SubmitDelayed(runnable, time) Scheduler_SubmitDelayed(&MainLooper.scheduler, runnable, time)
+#define MainLooper_GetTickAmount() Scheduler_GetTickCount(&MainLooper.scheduler)
 
 #endif

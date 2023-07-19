@@ -31,7 +31,11 @@ typedef struct {
 	}; 
 } StackFrame_t; 
 
-unsigned int profile_task_switches = 0; 
+struct {
+	unsigned long long dispatches; 
+	unsigned long long yields; 
+	unsigned int inits; 
+} Task_Profiling; 
 
 void Task_Init(void) {
 	// TODO: confirm these priorities
@@ -39,14 +43,12 @@ void Task_Init(void) {
 	SCB->SHP[1] = SCB->SHP[1] & 0xFFFF0000 | 0x0000C000; 
 }
 
-void Task_InitializeTask(Task_t * task, unsigned char * stackBase, unsigned int stackSize, void (*entryPoint)(Task_t *)) {
+void Task_InitStack(Task_t * task, unsigned char * stackBase, unsigned int stackSize, Task_Runnable_t entryPoint) {
+	// TODO: confirm stack alignment logic
 	task->stackBase = stackBase; 
-	
 	unsigned int stackEnd = (unsigned int)(stackBase + stackSize); 
 	if(stackEnd & 0x7) stackSize -= stackEnd & 0x7;
 	task->stackSize = stackSize; 
-	
-	
 	StackFrame_t * stackFrame = (StackFrame_t *)(stackBase + stackSize - sizeof(StackFrame_t)); 
 	task->stackPointer = (unsigned char *)stackFrame; 
 	for(int i = 0; i < 8; i++) stackFrame->contextFrame[i] = 0xDEADBEF0 + i; 
@@ -55,17 +57,18 @@ void Task_InitializeTask(Task_t * task, unsigned char * stackBase, unsigned int 
 	stackFrame->lr = 0x22222222; 
 	stackFrame->pc = ((unsigned int)entryPoint) | 0x1; 
 	stackFrame->psr = 0x01000000; 
+	Task_Profiling.inits++; 
 }
 
 __svc(0x0) unsigned char * internalSvcDispatch(unsigned char *); 
 void Task_Dispatch(Task_t * task) {
-	profile_task_switches++; 
+	Task_Profiling.dispatches++; 
 	task->stackPointer = internalSvcDispatch(task->stackPointer); 
 }
 
 __svc(0x1) void internalSvcYield(void); 
 void Task_Yield(void) {
-	profile_task_switches++; 
+	Task_Profiling.yields++; 
 	internalSvcYield(); 
 }
 
@@ -136,6 +139,3 @@ PendSV_Handler_PSPToMSP
 		STR			R0, [SP]
 		BX			LR
 }
-
-
-

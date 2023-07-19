@@ -3,57 +3,72 @@
 #include "lwtdaq.h"
 
 #include "looper.h"
+
 #include "libi2c.h"
+
+struct {
+	unsigned int acquisitions; 
+	unsigned int spuriousI2CWaits; 
+} LWTDAQ_Profiling; 
+
+LWTDAQ_t LWTDAQ; 
+
+unsigned char LWTDAQ_Stack[LWTDAQ_STACK_SIZE]; 
 
 void I2C_WriteSingleRegister(unsigned char devaddr, unsigned char regaddr, unsigned char data); 
 unsigned int I2C_ReadRegisters3(unsigned char devaddr, unsigned char regaddr); 
 unsigned int LTR390_Meas_UV(void); 
 unsigned int LTR390_Meas_VIS(void); 
 
-#define LWTDAQ_STACK_SIZE 512
-unsigned char LWTDAQ_Stack[LWTDAQ_STACK_SIZE]; 
-
-LWTDAQ_State_t LWTDAQ_State; 
-
-void LWTDAQ_Entry(Task_t * self); 
-void LWTDAQ_Init(void * callback) {
-	LWTDAQ_State.busy = 0; 
-	LWTDAQ_State.callback = callback; 
-	Task_InitializeTask(&LWTDAQ_State.task, LWTDAQ_Stack, LWTDAQ_STACK_SIZE, LWTDAQ_Entry); 
+void LWTDAQ_Entry(void); 
+void LWTDAQ_Init(void) {
+	LWTDAQ.busy = 0; 
+	LWTDAQ.callback = 0; 
+	Task_InitStack(&LWTDAQ.task, LWTDAQ_Stack, LWTDAQ_STACK_SIZE, LWTDAQ_Entry); 
 }
 
 void LWTDAQ_Resume(void) {
-	Task_Dispatch(&LWTDAQ_State.task); 
+	Task_Dispatch(&LWTDAQ.task); 
 }
 
-void LWTDAQ_Trigger(void) {
-	if(LWTDAQ_State.busy) return; 
-	Handler_Post1(&MainLooper.handler, LWTDAQ_Resume); 
+void LWTDAQ_Trigger(Handler_Runnable_t callback) {
+	if(LWTDAQ.busy) return; 
+	if(callback) 
+		LWTDAQ.callback = callback; 
+	MainLooper_Submit(LWTDAQ_Resume); 
 }
 
 void LWTDAQ_Delayms(int ms) {
-	Scheduler_PostDelayed1(&MainLooper.scheduler, ms, LWTDAQ_Resume); 
+	MainLooper_SubmitDelayed(LWTDAQ_Resume, ms); 
 	Task_Yield(); 
 }
 
-void LWTDAQ_Entry(Task_t * self) {
+void LWTDAQ_Entry(void) {
 	for(;;) {
-		LWTDAQ_State.meas.uv   = LTR390_Meas_UV(); 
-		LWTDAQ_State.meas.vis  = LTR390_Meas_VIS(); 
-		LWTDAQ_State.meas.tick = Scheduler_GetTickCount(&MainLooper.scheduler); 
-		if(LWTDAQ_State.callback) 
-			Handler_Post1(&MainLooper.handler, LWTDAQ_State.callback); 
+		LWTDAQ.busy = 1; 
+		LWTDAQ.meas.uv   = LTR390_Meas_UV(); 
+		LWTDAQ.meas.vis  = LTR390_Meas_VIS(); 
+		LWTDAQ.meas.tick = MainLooper_GetTickAmount(); 
+		LWTDAQ_Profiling.acquisitions++; 
+		if(LWTDAQ.callback) 
+			MainLooper_Submit(LWTDAQ.callback); 
+		LWTDAQ.busy = 0; 
 		Task_Yield(); 
 	}
 }
 
 
 // I2C operations
-#define I2C_ADDR_LTR390 0xA6
+void I2C_PollingEnsureIdle(void) {
+	if(I2C_State.busy) {
+		LWTDAQ_Profiling.spuriousI2CWaits++; 
+		while(I2C_State.busy); 
+	}
+}
 
 void I2C_WriteSingleRegister(unsigned char devaddr, unsigned char regaddr, unsigned char data) {
 	unsigned char buf[1]; 
-	while(I2C_State.busy); 
+	I2C_PollingEnsureIdle(); 
 	I2C_Data.devaddr = devaddr; 
 	I2C_Data.oplen = 1; 
 	I2C_Data.opcode = regaddr; 
@@ -67,7 +82,7 @@ void I2C_WriteSingleRegister(unsigned char devaddr, unsigned char regaddr, unsig
 
 unsigned int I2C_ReadRegisters3(unsigned char devaddr, unsigned char regaddr) {
 	unsigned char buf[3]; 
-	while(I2C_State.busy); 
+	I2C_PollingEnsureIdle(); 
 	I2C_Data.devaddr = devaddr; 
 	I2C_Data.oplen = 1; 
 	I2C_Data.opcode = regaddr; 
@@ -82,6 +97,14 @@ unsigned int I2C_ReadRegisters3(unsigned char devaddr, unsigned char regaddr) {
 	data |= buf[2] << 16; 
 	return data; 
 }
+
+// Weakly linked to libi2c
+void I2C_StateChangeCallback(int error) {
+	MainLooper_Submit(LWTDAQ_Resume); 
+}
+
+// LTR390 operations
+#define I2C_ADDR_LTR390 0xA6
 
 unsigned int LTR390_Meas_UV(void) {
 	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x04, 0x26); // 18bit, 2000ms
@@ -101,7 +124,4 @@ unsigned int LTR390_Meas_VIS(void) {
 	return I2C_ReadRegisters3(I2C_ADDR_LTR390, 0x0D); 	
 }
 
-void I2C_StateChangeCallback(int error) {
-	Handler_Post1(&MainLooper.handler, LWTDAQ_Resume); 
-}
 

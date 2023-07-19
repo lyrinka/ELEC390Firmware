@@ -8,14 +8,9 @@
 
 void callback1(void) {
 	LED_Green_On(); 
-	LWTDAQ_Trigger(); 
-	Scheduler_PostDelayed1(&MainLooper.scheduler, 1000, callback1); 
+	LWTDAQ_Trigger(LED_Green_Off); 
+	MainLooper_SubmitDelayed(callback1, 1000); 
 }
-
-void callback2(void) {
-	LED_Green_Off(); 
-}
-
 
 int main(void) {
 	Sys_Init(); 
@@ -27,9 +22,11 @@ int main(void) {
 	while(!Sys_LSEReady()); 
 	LED_Blue_Off(); 
 	
-	LWTDAQ_Init(callback2); 
+	LWTDAQ_Init(); 
 	
-	MainLooper_Entry(callback1); 
+	MainLooper_Init(); 
+	MainLooper_Submit(callback1); 
+	MainLooper_Entry();  
 	while(1); 
 }
 

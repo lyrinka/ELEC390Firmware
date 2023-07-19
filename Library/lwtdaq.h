@@ -5,20 +5,22 @@
 #include "libscheduler.h"
 #include "libtask.h"
 
+#define LWTDAQ_STACK_SIZE 512
+
 typedef struct {
 	Task_t task; 
 	int busy; 
+	Handler_Runnable_t callback; 
 	struct {
 		unsigned long long tick; 
 		unsigned int uv; 
 		unsigned int vis; 
 	} meas; 
-	void * callback; 
-} LWTDAQ_State_t; 
+} LWTDAQ_t; 
 
-extern LWTDAQ_State_t LWTDAQ_State; 
+extern LWTDAQ_t LWTDAQ; 
 
-extern void LWTDAQ_Init(void * callback); 
-extern void LWTDAQ_Trigger(void); 
+extern void LWTDAQ_Init(void); 
+extern void LWTDAQ_Trigger(Handler_Runnable_t callback); 
 
 #endif

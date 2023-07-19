@@ -2,19 +2,34 @@
 
 #include "looper.h"
 
-#define MAIN_LOOPER_HANDLER_QUEUE_SIZE 128
-Handler_Runnable_t MainLooperHandlerQueue[MAIN_LOOPER_HANDLER_QUEUE_SIZE]; 
-
-#define MAIN_LOOPER_SCHEDULER_HEAP_SIZE 8
-Scheduler_Promise_t MainLooperSchedulerHeap[MAIN_LOOPER_SCHEDULER_HEAP_SIZE]; 
+struct {
+	unsigned long long cycles; 
+} MainLooper_Profiling; 
 
 Looper_t MainLooper; 
 
+Handler_Runnable_t MainLooper_HandlerQueue[MAINLOOPER_HANDLER_QUEUE_SIZE]; 
+Scheduler_Promise_t MainLooper_SchedulerHeap[MAINLOOPER_SCHEDULER_HEAP_SIZE]; 
+
 void SysTick_Init(void); 
 void SysTick_Handler(void); 
-
-void MainLooper_SchedulerExecution(Handler_t * handler, unsigned int tickAmount); 
+void MainLooper_SchedulerExecution(void); 
 void MainLooper_IdlePeriod(void); 
+
+void MainLooper_Init(void) {
+	Handler_Init(&MainLooper.handler, MainLooper_HandlerQueue, MAINLOOPER_HANDLER_QUEUE_SIZE); 
+	Scheduler_Init(&MainLooper.scheduler, MainLooper_SchedulerHeap, MAINLOOPER_SCHEDULER_HEAP_SIZE, &MainLooper.handler); 
+}
+
+void MainLooper_Entry(void) {
+	SysTick_Init(); 
+	while(!MainLooper.exit) {
+		MainLooper_Profiling.cycles++; 
+		Handler_Runnable_t runnable = Handler_Fetch(&MainLooper.handler); 
+		if(runnable) runnable(); 
+		else MainLooper_IdlePeriod(); 
+	}
+}
 
 void SysTick_Init(void) {
 	// 10ms tick interval
@@ -25,36 +40,19 @@ void SysTick_Init(void) {
 }
 
 void SysTick_Handler(void) {
-	Handler_Post2(&MainLooper.handler, MainLooper_SchedulerExecution, 10); 
+	MainLooper_Submit(MainLooper_SchedulerExecution); 
 }
 
-void MainLooper_SchedulerExecution(Handler_t * handler, unsigned int tickAmount) {
-	Scheduler_AdvanceTick(&MainLooper.scheduler, tickAmount); 
+void MainLooper_SchedulerExecution(void) {
+	Scheduler_AdvanceTicks(&MainLooper.scheduler, 10); 
 }
 
 void MainLooper_IdlePeriod(void) {
 	__disable_irq(); 
 	if(MainLooper.handler.size == 0) {
-// TODO: debug under WFI
 //	__wfi(); 
-	for(int i = 0; i < 20; i++); 
+		while(!(SCB->ICSR & SCB_ICSR_VECTPENDING_Msk)); 
 	}
 	__enable_irq(); 
+	__nop();
 }
-
-void MainLooper_Entry(void * entryRunnable) {
-	Handler_Init(&MainLooper.handler, MainLooperHandlerQueue, MAIN_LOOPER_HANDLER_QUEUE_SIZE); 
-	Scheduler_Init(&MainLooper.scheduler, MainLooperSchedulerHeap, MAIN_LOOPER_SCHEDULER_HEAP_SIZE, &MainLooper.handler); 
-	
-	SysTick_Init(); 
-	
-	if(entryRunnable) 
-		Handler_Post1(&MainLooper.handler, entryRunnable); 
-	
-	while(!MainLooper.exit) {
-		int result = Handler_Execute(&MainLooper.handler); 
-		if(result == HANDLER_EXECUTOR_PERFORMED) continue; 
-		MainLooper_IdlePeriod(); 
-	}
-}
-

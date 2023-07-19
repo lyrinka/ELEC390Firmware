@@ -15,15 +15,11 @@ typedef struct {
 	unsigned int capacity; 
 } Scheduler_t; 
 
-
 extern void Scheduler_Init(Scheduler_t * scheduler, Scheduler_Promise_t * storage, unsigned int size, Handler_t * handler); 
-
-extern void Scheduler_PostDelayed1(Scheduler_t * scheduler, unsigned int delay, void * func); 
-extern void Scheduler_PostDelayed2(Scheduler_t * scheduler, unsigned int delay, void * func, unsigned int param); 
-extern void Scheduler_PostDelayed3(Scheduler_t * scheduler, unsigned int delay, const Handler_Runnable_t * runnable); 
-
-extern void Scheduler_AdvanceTick(Scheduler_t * scheduler, unsigned int amount); 
-
 extern unsigned long long Scheduler_GetTickCount(const Scheduler_t * scheduler); 
+
+extern void Scheduler_SubmitDelayed(Scheduler_t * scheduler, Handler_Runnable_t func, unsigned int delay); 
+
+extern void Scheduler_AdvanceTicks(Scheduler_t * scheduler, unsigned int amount); 
 
 #endif
