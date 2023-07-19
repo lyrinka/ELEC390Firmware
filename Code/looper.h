@@ -10,6 +10,6 @@ typedef struct {
 
 extern Looper_t MainLooper; 
 
-extern void MainLooper_Entry( void (*entryRunnable)(Handler_t * handler, unsigned int param)); 
+extern void MainLooper_Entry(void * func); 
 
 #endif

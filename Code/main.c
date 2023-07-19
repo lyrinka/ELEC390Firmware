@@ -73,7 +73,7 @@ void callbackRunDAQ(Handler_t * handler, unsigned int param) {
 }
 
 void I2C_StateChangeCallback(int error) {
-	Handler_Post(&MainLooper.handler, callbackRunDAQ, error); 
+	Handler_Post2(&MainLooper.handler, callbackRunDAQ, error); 
 }
 
 void DAQTaskFunc(Task_t * self) {

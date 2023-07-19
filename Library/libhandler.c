@@ -5,23 +5,11 @@
 // Profiling only, will be removed
 #include "libsys.h"
 
-typedef struct HandlerRunnable_s {
-	void (*runnable)(Handler_t * handler, unsigned int param); 
-	unsigned int param; 
-} HandlerRunnable_t; 
-
 #define critEnter() unsigned int __X_IE = __get_PRIMASK(); __disable_irq()
 #define critExit() __set_PRIMASK(__X_IE)
 
-void Handler_Init(Handler_t * handler, unsigned char * memory, unsigned int size) {
-	// align to handler runnable size (8 bytes)
-	if((unsigned int)memory & 0x7) {
-		int offset = 0x8 - ((unsigned int)memory & 0x7); 
-		memory += offset; 
-		size -= offset; 
-	}
-	size >>= 3; 
-	handler->queue = (HandlerRunnable_t *)memory; 
+void Handler_Init(Handler_t * handler, Handler_Runnable_t * storage, unsigned int size) {
+	handler->queue = storage; 
 	handler->capacity = size; 
 	handler->head = 0; 
 	handler->tail = 0; 
@@ -29,7 +17,18 @@ void Handler_Init(Handler_t * handler, unsigned char * memory, unsigned int size
 	handler->maxSizeReached = 0; 
 }
 
-void Handler_Post(Handler_t * handler, void (*runnable)(Handler_t * handler, unsigned int param), unsigned int param) {
+void Handler_Post1(Handler_t * handler, void * func) {
+	Handler_Post2(handler, func, 0); 
+}
+
+void Handler_Post2(Handler_t * handler, void * func, unsigned int param) {
+	Handler_Runnable_t runnable; 
+	runnable.func = (Handler_Func_t)func; 
+	runnable.param = param; 
+	Handler_Post3(handler, &runnable); 
+}
+
+void Handler_Post3(Handler_t * handler, const Handler_Runnable_t * runnable0) {
 	critEnter(); 
 	if(handler->size >= handler->capacity) {
 		// TODO: how do we handle queue overflow?
@@ -37,13 +36,13 @@ void Handler_Post(Handler_t * handler, void (*runnable)(Handler_t * handler, uns
 		return; 
 	}
 	unsigned int head = handler->head; 
-	HandlerRunnable_t * element = &handler->queue[head]; 
+	Handler_Runnable_t * runnable = &handler->queue[head]; 
 	if(++head >= handler->capacity) head = 0; 
 	handler->head = head; 
 	if(++handler->size > handler->maxSizeReached) 
 		handler->maxSizeReached = handler->size; 
-	element->runnable = runnable; 
-	element->param = param; 
+	runnable->func  = runnable0->func; 
+	runnable->param = runnable0->param; 
 	critExit(); 
 }
 
@@ -54,14 +53,14 @@ int Handler_Execute(Handler_t * handler) {
 		return HANDLER_EXECUTOR_EMPTY; 
 	}
 	unsigned int tail = handler->tail; 
-	HandlerRunnable_t element = handler->queue[tail]; 
+	Handler_Runnable_t runnable = handler->queue[tail]; 
 	if(++tail >= handler->capacity) tail = 0; 
 	handler->tail = tail; 
 	handler->size--;
 	critExit(); 
 	// LED toggling for profiling, will be removed
 	LED_Green_On(); 
-	element.runnable(handler, element.param); 
+	runnable.func(handler, runnable.param); 
 	LED_Green_Off(); 
 	return HANDLER_EXECUTOR_PERFORMED; 
 }
