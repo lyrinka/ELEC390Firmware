@@ -7,13 +7,13 @@
 #include "lwtdaq.h"
 
 void callback1(void) {
-//LED_Blue_On(); 
+	LED_Green_On(); 
 	LWTDAQ_Trigger(); 
 	Scheduler_PostDelayed1(&MainLooper.scheduler, 1000, callback1); 
 }
 
 void callback2(void) {
-	LED_Blue_Off(); 
+	LED_Green_Off(); 
 }
 
 

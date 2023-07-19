@@ -478,9 +478,6 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Sensors</GroupName>
-        </Group>
-        <Group>
           <GroupName>Protocol</GroupName>
           <Files>
             <File>
