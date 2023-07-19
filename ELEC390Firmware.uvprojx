@@ -493,6 +493,26 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>Util</GroupName>
+          <Files>
+            <File>
+              <FileName>libstream.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libstream.c</FilePath>
+            </File>
+            <File>
+              <FileName>libmutex.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libmutex.h</FilePath>
+            </File>
+            <File>
+              <FileName>libstream.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libstream.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>::CMSIS</GroupName>
         </Group>
         <Group>

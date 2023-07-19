@@ -4,8 +4,7 @@
 
 #define TARGET_TIME_INACTIVE 0xFFFFFFFFFFFFFFFF
 
-#define critEnter() unsigned int __X_IE = __get_PRIMASK(); __disable_irq()
-#define critExit() __set_PRIMASK(__X_IE)
+#include "libmutex.h"
 
 struct {
 	unsigned long long submit0s; 
