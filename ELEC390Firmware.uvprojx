@@ -425,6 +425,16 @@
               <FileType>5</FileType>
               <FilePath>.\Library\libhandler.h</FilePath>
             </File>
+            <File>
+              <FileName>libscheduler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libscheduler.c</FilePath>
+            </File>
+            <File>
+              <FileName>libscheduler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libscheduler.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

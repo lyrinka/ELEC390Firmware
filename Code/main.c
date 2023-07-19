@@ -8,6 +8,8 @@
 
 #include "looper.h"
 
+/*
+
 #define I2C_ADDR_LTR390 0xA6
 
 unsigned char DAQTaskStack[512]; 
@@ -84,6 +86,29 @@ void DAQTaskFunc(Task_t * self) {
 	}
 }
 
+*/
+
+void callback1(Handler_t * handler, unsigned int param); 
+void callback2(Handler_t * handler, unsigned int param); 
+void callback3(Handler_t * handler, unsigned int param); 
+
+void callback1(Handler_t * handler, unsigned int param) {
+	LED_Blue_Off(); 
+	LED_Red_Off(); 
+	Scheduler_PostDelayed1(&MainLooper.scheduler, 1000, callback1); 
+	Scheduler_PostDelayed1(&MainLooper.scheduler,  800, callback2); 
+	Scheduler_PostDelayed1(&MainLooper.scheduler,  900, callback3); 
+}
+
+void callback2(Handler_t * handler, unsigned int param) {
+	LED_Red_On(); 
+}
+
+void callback3(Handler_t * handler, unsigned int param) {
+	LED_Red_Off(); 
+	LED_Blue_On(); 
+}
+
 int main(void) {
 	Sys_Init(); 
 	I2C_HWInit(); 
@@ -92,19 +117,10 @@ int main(void) {
 	LED_Blue_Off(); 
 	
 	Task_Init(); 
-	Task_InitializeTask(&DAQTask, DAQTaskStack, sizeof(DAQTaskStack), DAQTaskFunc); 
+//Task_InitializeTask(&DAQTask, DAQTaskStack, sizeof(DAQTaskStack), DAQTaskFunc); 
 	
-	MainLooper_Entry(callbackRunDAQ); 
+	MainLooper_Entry(callback1); 
 	while(1); 
 }
 
-void delayms(int ms) {
-	SysTick->CTRL = 0x4; 
-	SysTick->LOAD = 999; 
-	SysTick->VAL = 0x0; 
-	SysTick->CTRL = 0x5; 
-	for(int i = 0; i < ms; i++) 
-		while(!(SysTick->CTRL & 0x10000)); 
-	SysTick->CTRL = 0x4; 
-}
 

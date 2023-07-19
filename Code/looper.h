@@ -2,9 +2,11 @@
 #define LOOPER_H__
 
 #include "libhandler.h"
+#include "libscheduler.h"
 
 typedef struct {
 	Handler_t handler; 
+	Scheduler_t scheduler; 
 	unsigned int exit; 
 } Looper_t; 
 
