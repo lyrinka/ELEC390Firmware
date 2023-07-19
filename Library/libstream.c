@@ -16,6 +16,14 @@ void Stream_AttachProfileObj(Stream_t * stream, Stream_Profiling_t * profiling) 
 	stream->profiling = profiling; 
 }
 
+unsigned int Stream_GetSize(const Stream_t * stream) {
+	return stream->size; 
+}
+
+unsigned int Stream_GetSizeRemaining(const Stream_t * stream) {
+	return stream->capacity - stream->size; 
+}
+
 int Stream_Write(Stream_t * stream, unsigned char data) {
 	critEnter(); 
 	if(stream->size >= stream->capacity) {

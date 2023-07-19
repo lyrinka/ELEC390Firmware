@@ -20,6 +20,9 @@ typedef struct {
 extern void Stream_Init(Stream_t * stream, unsigned char * storage, unsigned int size); 
 extern void Stream_AttachProfileObj(Stream_t * stream, Stream_Profiling_t * profiling); 
 
+extern unsigned int Stream_GetSize(const Stream_t * stream); 
+extern unsigned int Stream_GetSizeRemaining(const Stream_t * stream); 
+
 #define STREAM_WRITE_SUCCESS 0
 #define STREAM_WRITE_FULL -1
 extern int Stream_Write(Stream_t * stream, unsigned char data); 

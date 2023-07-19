@@ -475,6 +475,16 @@
               <FileType>5</FileType>
               <FilePath>.\Library\libi2c.h</FilePath>
             </File>
+            <File>
+              <FileName>libuartble.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libuartble.c</FilePath>
+            </File>
+            <File>
+              <FileName>libuartble.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libuartble.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
