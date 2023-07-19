@@ -400,6 +400,16 @@
               <FileType>5</FileType>
               <FilePath>.\Code\looper.h</FilePath>
             </File>
+            <File>
+              <FileName>lwtdaq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\lwtdaq.c</FilePath>
+            </File>
+            <File>
+              <FileName>lwtdaq.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\lwtdaq.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

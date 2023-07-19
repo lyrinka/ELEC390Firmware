@@ -64,3 +64,10 @@ void Scheduler_AdvanceTick(Scheduler_t * scheduler, unsigned int amount) {
 	critExit(); 
 }
 
+unsigned long long Scheduler_GetTickCount(const Scheduler_t * scheduler) {
+	unsigned long long tick; 
+	critEnter(); 
+	tick = scheduler->currentTick; 
+	critExit(); 
+	return tick; 
+}

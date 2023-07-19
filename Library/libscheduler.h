@@ -1,5 +1,5 @@
 #ifndef LIBSHCEULDER_H__
-#define LIBSCHEDULER_H__
+#define LIBSHCEULDER_H__
 
 #include "libhandler.h"
 
@@ -24,5 +24,6 @@ extern void Scheduler_PostDelayed3(Scheduler_t * scheduler, unsigned int delay, 
 
 extern void Scheduler_AdvanceTick(Scheduler_t * scheduler, unsigned int amount); 
 
+extern unsigned long long Scheduler_GetTickCount(const Scheduler_t * scheduler); 
 
 #endif
