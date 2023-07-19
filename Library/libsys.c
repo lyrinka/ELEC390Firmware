@@ -11,7 +11,7 @@
 void Sys_Init(void) {
 	/* -------- Enable core peripherals -------- */
 	RCC->AHBENR  |= RCC_AHBENR_FLASHEN; 
-	RCC->APBENR1 |= RCC_APBENR1_PWREN; 
+	RCC->APBENR1 |= RCC_APBENR1_PWREN | RCC_APBENR1_DBGEN; 
 	RCC->APBENR2 |= RCC_APBENR2_SYSCFGEN; 
 	RCC->IOPENR = 0x2F; // Turn on ALL GPIO
 	__DSB(); 

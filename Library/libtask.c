@@ -31,6 +31,8 @@ typedef struct {
 	}; 
 } StackFrame_t; 
 
+unsigned int profile_task_switches = 0; 
+
 void Task_Init(void) {
 	// TODO: confirm these priorities
 	SCB->SHP[0] = SCB->SHP[0] & 0x0000FFFF; 
@@ -57,12 +59,14 @@ void Task_InitializeTask(Task_t * task, unsigned char * stackBase, unsigned int 
 
 __svc(0x0) unsigned char * internalSvcDispatch(unsigned char *); 
 void Task_Dispatch(Task_t * task) {
-		task->stackPointer = internalSvcDispatch(task->stackPointer); 
+	profile_task_switches++; 
+	task->stackPointer = internalSvcDispatch(task->stackPointer); 
 }
 
 __svc(0x1) void internalSvcYield(void); 
 void Task_Yield(void) {
-		internalSvcYield(); 
+	profile_task_switches++; 
+	internalSvcYield(); 
 }
 
 __asm void SVC_Handler(void) {

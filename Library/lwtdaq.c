@@ -31,7 +31,7 @@ void LWTDAQ_Trigger(void) {
 	Handler_Post1(&MainLooper.handler, LWTDAQ_Resume); 
 }
 
-void LWQDAQ_Delayms(int ms) {
+void LWTDAQ_Delayms(int ms) {
 	Scheduler_PostDelayed1(&MainLooper.scheduler, ms, LWTDAQ_Resume); 
 	Task_Yield(); 
 }
@@ -87,7 +87,7 @@ unsigned int LTR390_Meas_UV(void) {
 	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x04, 0x26); // 18bit, 2000ms
 	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x05, 0x01); // 3x
 	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x00, 0x0A); // UV measurement
-	LWQDAQ_Delayms(110); 
+	LWTDAQ_Delayms(110); 
 	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x00, 0x00); // Stop
 	return I2C_ReadRegisters3(I2C_ADDR_LTR390, 0x10); 	
 }
@@ -96,7 +96,7 @@ unsigned int LTR390_Meas_VIS(void) {
 	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x04, 0x26); // 18bit, 2000ms
 	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x05, 0x01); // 3x
 	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x00, 0x02); // VIS measurement
-	LWQDAQ_Delayms(110); 
+	LWTDAQ_Delayms(110); 
 	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x00, 0x00); // Stop
 	return I2C_ReadRegisters3(I2C_ADDR_LTR390, 0x0D); 	
 }
