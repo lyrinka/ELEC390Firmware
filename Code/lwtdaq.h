@@ -19,6 +19,12 @@ typedef struct {
 	unsigned char uv; 
 } LWTDAQ_CompressedMeasurement_t; 
 
+#define LWTDAQ_LEDMODE_OFF 0x80
+#define LWTDAQ_LEDMODE_OFFLINE 0
+#define LWTDAQ_LEDMODE_CONNECTED 1
+#define LWTDAQ_LEDMODE_ONLINE 2
+#define LWTDAQ_LEDMODE_DISCONNECTED 3
+
 typedef struct {
 	Task_t task; 
 	LWTDAQ_Measurement_t measurement; 
@@ -28,6 +34,7 @@ typedef struct {
 	unsigned char started;
 	unsigned char sampleReady; 
 	unsigned char timerTriggered; 
+	unsigned char ledMode; 
 } LWTDAQ_t; 
 
 extern LWTDAQ_t LWTDAQ; 

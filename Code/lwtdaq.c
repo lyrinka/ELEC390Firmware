@@ -36,6 +36,9 @@ void LWTDAQ_Init(void) {
 	
 	LWTDAQ.minutes = 0; 
 	LWTDAQ.seconds = 0; 
+	
+	LWTDAQ.ledMode = LWTDAQ_LEDMODE_OFFLINE; 
+	
 	Task_InitStack(&LWTDAQ.task, LWTDAQ_Stack, LWTDAQ_STACK_SIZE, LWTDAQ_Entry); 
 }
 
@@ -72,24 +75,21 @@ void LWTDAQ_Entry(void) {
 	LPTIM1->IER = 0x2; 
 	NVIC_EnableIRQ(TIM6_DAC_LPTIM1_IRQn); 
 	LPTIM1->CR |= 0x4; 
+	// Some other system functions
+	int ledCounter = 0; 
 	for(unsigned char firstCycle = 1;; firstCycle = 0) {
 		// Wait for LPTIM trigger
 		while(!LWTDAQ.timerTriggered) Task_Yield(); 
 		LWTDAQ.timerTriggered = 0; 
-		
-		LED_Green_On(); 
-		
+		// Real DAQ
 		unsigned short vis = LTR390_Meas_VIS() & 0xFFFF; 
 		unsigned short uv = LTR390_Meas_UV() & 0x1FFF; 
-		
 		LWTDAQ.measurement.vis = vis; 
 		LWTDAQ.measurement.uv = uv; 
-		
 		LWTDAQ.compressedMeasurement 
 			= LWTDAQ_CompressMeasurement(
 				LWTDAQ.measurement
 		); 
-		
 		char minuteOverflow = 0; 
 		if(!firstCycle) {
 			if(++LWTDAQ.seconds >= 60) {
@@ -98,16 +98,51 @@ void LWTDAQ_Entry(void) {
 				minuteOverflow = 1; 
 			}
 		}
-		
+		// TODO: data processing
 		LWTDAQ.sampleReady = 1; 
 		MainLooper_Submit(LWTDAQ_Callback); 
-		
 		if(minuteOverflow) {
 			// TODO
 			__nop(); 
 		}
-			
-		LED_Green_Off(); 
+		// LED handling
+		if(!(LWTDAQ.ledMode & LWTDAQ_LEDMODE_OFF)) {
+			switch(LWTDAQ.ledMode) {
+				default: 
+				case LWTDAQ_LEDMODE_OFFLINE: {
+					if(!ledCounter) {
+						LED_Blue_On(); 
+						MainLooper_SubmitDelayed(LED_Blue_Off, 10); 
+					}
+					if(++ledCounter > 32) ledCounter = 0; 
+					break; 
+				}
+				case LWTDAQ_LEDMODE_CONNECTED: {
+					LED_Green_On(); 
+					MainLooper_SubmitDelayed(LED_Green_Off, 1000); 
+					LWTDAQ.ledMode = LWTDAQ_LEDMODE_ONLINE; 
+					ledCounter = 1; 
+					break; 
+				}
+				case LWTDAQ_LEDMODE_ONLINE: {
+					if(!ledCounter) {
+						LED_Green_On(); 
+						MainLooper_SubmitDelayed(LED_Green_Off, 10); 
+					}
+					if(++ledCounter > 8) ledCounter = 0; 
+					break; 
+				}
+				case LWTDAQ_LEDMODE_DISCONNECTED: {
+					LED_Red_On(); 
+					MainLooper_SubmitDelayed(LED_Red_Off, 1000); 
+					LWTDAQ.ledMode = LWTDAQ_LEDMODE_OFFLINE; 
+					ledCounter = 1; 
+					break; 
+				}
+			}
+		}
+		// TODO: charging indication
+		
 	}
 }
 

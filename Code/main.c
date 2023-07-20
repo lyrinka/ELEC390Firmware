@@ -31,9 +31,10 @@ void Initialization(void) {
 
 void Main_Loop(void) {
 	if(!connected) return; 
+	/*
 	LED_Blue_On(); 
 	MainLooper_SubmitDelayed(LED_Blue_Off, 50); 
-	MainLooper_SubmitDelayed(Main_Loop, 2000); 
+	MainLooper_SubmitDelayed(Main_Loop, 2000); */
 }
 
 void Protocol_OnRxMessage(const char * string, unsigned int length) {
@@ -41,10 +42,12 @@ void Protocol_OnRxMessage(const char * string, unsigned int length) {
 		for(int i = 0; i < 3; i++)
 			Protocol_TxMessage("WAKEUPWAKEUP"); 
 		connected = 1; 
+		LWTDAQ.ledMode = LWTDAQ_LEDMODE_CONNECTED; 
 		MainLooper_SubmitDelayed(Main_Loop, 1000); 
 	}
 	else if(strcmprefix(string, length, "DISCONNECTED")) {
 		connected = 0; 
+		LWTDAQ.ledMode = LWTDAQ_LEDMODE_DISCONNECTED; 
 		// TODO: enter sleep mode
 	}
 	Protocol_RxProcessingDone(); 
