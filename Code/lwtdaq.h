@@ -5,8 +5,6 @@
 #include "libscheduler.h"
 #include "libtask.h"
 
-#define LWTDAQ_STACK_SIZE 512
-
 typedef struct {
 	Task_t task; 
 	int busy; 

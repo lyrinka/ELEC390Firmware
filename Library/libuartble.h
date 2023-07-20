@@ -1,10 +1,6 @@
 #ifndef LIBUARTBLE_H__
 #define LIBUARTBLE_H__
 
-#define UARTBLE_TXBUFFER_SIZE 1024
-#define UARTBLE_RXBUFFER_SIZE 1024
-#define UARTBLE_LINEBUFFER_SIZE 512
-
 #include "libstream.h"
 
 typedef struct {

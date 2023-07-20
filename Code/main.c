@@ -10,22 +10,53 @@
 
 #include "lwtdaq.h"
 
-void callback(void); 
-void callback1(void); 
-
-void callback(void) {
-	for(int i = 0; i < 3; i++)
-		Protocol_TxMessage("WAKEUPWAKEUP"); 
-	MainLooper_SubmitDelayed(Protocol_RxProcessingDone, 700); 
+int strcmprefix(const char * str1, unsigned int length, const char * str2) {
+	for(int i = 0; i < 32; i++) {
+		if(i >= length) return 1; 
+		char ch1 = str1[i]; 
+		char ch2 = str2[i]; 
+		if(ch1 == 0) return 0; 
+		if(ch2 == 0) return 1; 
+		if(ch1 != ch2) return 0; 
+	}
+	return 1; // max length reached
 }
 
-void callback1(void) {
-	LED_Green_On(); 
+int connected = 0; 
+
+void Initialization(void) {
+	connected = 0; 
+	Protocol_RxProcessingDone(); 
+}
+
+void Main_Loop(void) {
+	if(!connected) return; 
 	LWTDAQ_Trigger(); 
-	MainLooper_SubmitDelayed(callback1, 1000); 
+	MainLooper_SubmitDelayed(Main_Loop, 1000); 
+}
+
+void Protocol_OnRxMessage(const char * string, unsigned int length) {
+	if(strcmprefix(string, length, "CONNECTED")) {
+		for(int i = 0; i < 3; i++)
+			Protocol_TxMessage("WAKEUPWAKEUP"); 
+		connected = 1; 
+		LED_Blue_On(); 
+		MainLooper_SubmitDelayed(LED_Blue_Off, 250); 
+		MainLooper_SubmitDelayed(Main_Loop, 1000); 
+	}
+	else if(strcmprefix(string, length, "DISCONNECTED")) {
+		connected = 0; 
+	}
+	Protocol_RxProcessingDone(); 
+}
+
+
+void Protocol_OnRxPacket(const Packet_t * packet) {
+	Protocol_RxProcessingDone(); 
 }
 
 void LWTDAQ_Callback(void) {
+	if(!connected) return; 
 	Packet_t packet; 
 	unsigned char payload[6]; 
 	packet.dir = 1; 
@@ -41,20 +72,8 @@ void LWTDAQ_Callback(void) {
 	payload[4] = uv >> 8; 
 	payload[5] = uv; 
 	Protocol_TxPacket(&packet); 
-	LED_Green_Off(); 
-}
-
-void Protocol_OnRxPacket_Autoend(const Packet_t * packet) {
-	__nop();
-	if(!LWTDAQ.busy) {
-		LED_Green_On(); 
-		LWTDAQ_Trigger(); 
-	}
-}
-
-void Protocol_OnRxPacket(const Packet_t * packet) {
-	Protocol_OnRxPacket_Autoend(packet); 
-	Protocol_RxProcessingDone(); 
+	LED_Green_On(); 
+	MainLooper_SubmitDelayed(LED_Green_Off, 20); 
 }
 
 int main(void) {
@@ -71,7 +90,7 @@ int main(void) {
 	
 	LWTDAQ_Init(); 
 	
-	MainLooper_SubmitDelayed(callback, 100); 
+	MainLooper_Submit(Initialization); 
 	MainLooper_Entry(); 
 	while(1); 
 }

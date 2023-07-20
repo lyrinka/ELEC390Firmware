@@ -4,9 +4,6 @@
 #include "libhandler.h"
 #include "libscheduler.h"
 
-#define MAINLOOPER_HANDLER_QUEUE_SIZE 128
-#define MAINLOOPER_SCHEDULER_HEAP_SIZE 8
-
 typedef struct {
 	Handler_t handler; 
 	Scheduler_t scheduler; 

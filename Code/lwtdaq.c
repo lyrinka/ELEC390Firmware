@@ -13,6 +13,7 @@ struct {
 
 LWTDAQ_t LWTDAQ; 
 
+#define LWTDAQ_STACK_SIZE 256
 unsigned char LWTDAQ_Stack[LWTDAQ_STACK_SIZE]; 
 
 void I2C_WriteSingleRegister(unsigned char devaddr, unsigned char regaddr, unsigned char data); 

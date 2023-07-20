@@ -2,6 +2,9 @@
 
 #include "looper.h"
 
+#define MAINLOOPER_HANDLER_QUEUE_SIZE 16
+#define MAINLOOPER_SCHEDULER_HEAP_SIZE 8
+
 struct {
 	unsigned long long cycles; 
 } MainLooper_Profiling; 
