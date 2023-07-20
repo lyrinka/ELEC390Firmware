@@ -20,6 +20,8 @@ unsigned char UARTBLE_RxBuffer[UARTBLE_RXBUFFER_SIZE];
 unsigned char UARTBLE_LineBuffer[UARTBLE_LINEBUFFER_SIZE]; 
 
 struct {
+	unsigned int txlines; 
+	unsigned int rxlines; 
 	unsigned int totaltx; 
 	unsigned int totalrx; 
 	unsigned int txoverflows; 
@@ -35,7 +37,7 @@ void UARTBLE_Init(void) {
 	
 	UARTBLE.lineParser.buffer = UARTBLE_LineBuffer; 
 	UARTBLE.lineParser.capacity = UARTBLE_LINEBUFFER_SIZE; 
-	UARTBLE.lineParser.enabled = 1; // TODO: change this back to 0
+	UARTBLE.lineParser.enabled = 0; 
 	UARTBLE.lineParser.index = 0; 
 	UARTBLE.lineParser.size = 0; 
 	UARTBLE.lineParser.state = LINEPARSER_READLINE; 
@@ -78,16 +80,32 @@ int UARTBLE_Write(const unsigned char * line, unsigned int size) {
 	Stream_Write(&UARTBLE.txStream, 0x0D); 
 	Stream_Write(&UARTBLE.txStream, 0x0A); 
 	USART2->CR1 |= USART_CR1_TXEIE_TXFNFIE; 
+	UARTBLE_Profiling.txlines++; 
 	critExit(); 
 	return UARTBLE_WRITE_SUCCESS; 
 }
 
+int UARTBLE_WriteWithPrefix(char prefix, const unsigned char * line, unsigned int size) {
+	critEnter(); 
+	if(size + 3 > Stream_GetSizeRemaining(&UARTBLE.txStream)) {
+		critExit(); 
+		return UARTBLE_WRITE_FAIL; 
+	}
+	Stream_Write(&UARTBLE.txStream, prefix); 
+	for(int i = 0; i < size; i++) {
+		Stream_Write(&UARTBLE.txStream, line[i]); 
+	}
+	Stream_Write(&UARTBLE.txStream, 0x0D); 
+	Stream_Write(&UARTBLE.txStream, 0x0A); 
+	USART2->CR1 |= USART_CR1_TXEIE_TXFNFIE; 
+	UARTBLE_Profiling.txlines++; 
+	critExit(); 
+	return UARTBLE_WRITE_SUCCESS; 
+}
+
+
 void UARTBLE_LineParser(void); 
 void UARTBLE_RxLineRelease(void) {
-	// Debug clear
-	for(int i = 0; i < UARTBLE.lineParser.size; i++) {
-		UARTBLE.lineParser.buffer[i] = 0; 
-	}
 	UARTBLE.lineParser.enabled = 1; 
 	MainLooper_Submit(UARTBLE_LineParser); 
 }
@@ -110,6 +128,7 @@ void UARTBLE_LineParser(void) {
 					if(index == 0) break; 
 					UARTBLE.lineParser.size = index; 
 					UARTBLE.lineParser.enabled = 0; 
+					UARTBLE_Profiling.rxlines++; 
 					MainLooper_Submit(UARTBLE_RxLineCallback); 
 					return; 
 				}

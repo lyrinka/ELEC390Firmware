@@ -23,7 +23,6 @@ unsigned int LTR390_Meas_VIS(void);
 void LWTDAQ_Entry(void); 
 void LWTDAQ_Init(void) {
 	LWTDAQ.busy = 0; 
-	LWTDAQ.callback = 0; 
 	Task_InitStack(&LWTDAQ.task, LWTDAQ_Stack, LWTDAQ_STACK_SIZE, LWTDAQ_Entry); 
 }
 
@@ -31,10 +30,9 @@ void LWTDAQ_Resume(void) {
 	Task_Dispatch(&LWTDAQ.task); 
 }
 
-void LWTDAQ_Trigger(Handler_Runnable_t callback) {
+void LWTDAQ_Trigger(void) {
 	if(LWTDAQ.busy) return; 
-	if(callback) 
-		LWTDAQ.callback = callback; 
+	LWTDAQ.busy = 1; 
 	MainLooper_Submit(LWTDAQ_Resume); 
 }
 
@@ -50,13 +48,15 @@ void LWTDAQ_Entry(void) {
 		LWTDAQ.meas.vis  = LTR390_Meas_VIS(); 
 		LWTDAQ.meas.tick = MainLooper_GetTickAmount(); 
 		LWTDAQ_Profiling.acquisitions++; 
-		if(LWTDAQ.callback) 
-			MainLooper_Submit(LWTDAQ.callback); 
+		MainLooper_Submit(LWTDAQ_Callback); 
 		LWTDAQ.busy = 0; 
 		Task_Yield(); 
 	}
 }
 
+__weak void LWTDAQ_Callback(void) {
+	return; 
+}
 
 // I2C operations
 void I2C_PollingEnsureIdle(void) {

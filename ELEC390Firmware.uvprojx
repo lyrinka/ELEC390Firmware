@@ -403,12 +403,12 @@
             <File>
               <FileName>lwtdaq.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Library\lwtdaq.c</FilePath>
+              <FilePath>.\Code\lwtdaq.c</FilePath>
             </File>
             <File>
               <FileName>lwtdaq.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\Library\lwtdaq.h</FilePath>
+              <FilePath>.\Code\lwtdaq.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -499,6 +499,16 @@
               <FileName>libpacket.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Library\libpacket.h</FilePath>
+            </File>
+            <File>
+              <FileName>libprotocol.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libprotocol.c</FilePath>
+            </File>
+            <File>
+              <FileName>libprotocol.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libprotocol.h</FilePath>
             </File>
           </Files>
         </Group>

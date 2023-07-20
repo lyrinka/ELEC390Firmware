@@ -10,7 +10,6 @@
 typedef struct {
 	Task_t task; 
 	int busy; 
-	Handler_Runnable_t callback; 
 	struct {
 		unsigned long long tick; 
 		unsigned int uv; 
@@ -21,6 +20,8 @@ typedef struct {
 extern LWTDAQ_t LWTDAQ; 
 
 extern void LWTDAQ_Init(void); 
-extern void LWTDAQ_Trigger(Handler_Runnable_t callback); 
+extern void LWTDAQ_Trigger(void); 
+
+__weak void LWTDAQ_Callback(void); 
 
 #endif

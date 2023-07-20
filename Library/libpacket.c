@@ -56,9 +56,8 @@ static void crc8Accept(unsigned char * pcrc, unsigned char input) {
 	*pcrc = crc; 
 }
 
-// Packet encode method reads a packet and passes encoded charaters to a byte-oriented consumer. 
-// The consumer shall return 0 on success and 1 when the consumer cannot accept input data. 
-int Packet_Encode(const Packet_t * obj, int (*consumer)(void * context, unsigned char data), void * context) {
+int Packet_Encode(const Packet_t * obj, unsigned char * buffer, unsigned int bufferLength, unsigned int * encodedLength) {
+	int bufferWriterIndex = 0; 
 	int payloadLength = obj->len; 
 	int packetReaderIndex = -2; 
 	unsigned char packetCRC = 0xFF; 
@@ -94,16 +93,19 @@ int Packet_Encode(const Packet_t * obj, int (*consumer)(void * context, unsigned
 		}
 		base93Encode(codecBuffer, codecBuffer); 
 		for(int i = 0; i < 5; i++) {
-			if(consumer(context, codecBuffer[i])) 
+			if(bufferWriterIndex >= bufferLength)
 				return PACKET_ENCODE_CONSUMER_FULL; 
+			buffer[bufferWriterIndex++] = codecBuffer[i]; 
 		}
-		if(endOfPacket) return PACKET_ENCODE_SUCCESS; 
+		if(endOfPacket) {
+			*encodedLength = bufferWriterIndex; 
+			return PACKET_ENCODE_SUCCESS; 
+		}
 	}
 }
 
-// Packet decode method reads from a byte-oriented producer and attempts to parse a packet. 
-// The producer shall return one byte on success and -1 when the producer cannot produce output data. 
-int Packet_Decode(Packet_t * obj, int buflen, int (*producer)(void * context), void * context) {
+int Packet_Decode(const unsigned char * buffer, unsigned int bufferLength, Packet_t * obj, unsigned int payloadBufferLength) {
+	int bufferReaderIndex = 0; 
 	int payloadLength; 
 	int packetWriterIndex = -2; 
 	unsigned char packetCRC = 0xFF; 
@@ -111,9 +113,9 @@ int Packet_Decode(Packet_t * obj, int buflen, int (*producer)(void * context), v
 	
 	for(;;) {
 		for(int i = 0; i < 5; i++) {
-			int data = producer(context); 
-			if(data < 0) return PACKET_DECODE_PRODUCER_EMPTY; 
-			codecBuffer[i] = data; 
+			if(bufferReaderIndex >= bufferLength)
+				return PACKET_DECODE_PRODUCER_EMPTY; 
+			codecBuffer[i] = buffer[bufferReaderIndex++]; 
 		}
 		base93Decode(codecBuffer, codecBuffer); 
 		for(int i = 0; i < 4; i++) {
@@ -125,7 +127,7 @@ int Packet_Decode(Packet_t * obj, int buflen, int (*producer)(void * context), v
 			}
 			else if(packetWriterIndex == -1) {
 				payloadLength = data; 
-				if(buflen < payloadLength)
+				if(payloadBufferLength < payloadLength)
 					return PACKET_DECODE_BUFFER_TOO_SMALL; 
 				obj->len = data; 
 				packetWriterIndex = 0; 

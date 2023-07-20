@@ -6,25 +6,55 @@
 #include "libi2c.h"
 #include "libuartble.h"
 
+#include "libprotocol.h"
+
 #include "lwtdaq.h"
+
+void callback(void); 
+void callback1(void); 
+
+void callback(void) {
+	for(int i = 0; i < 3; i++)
+		Protocol_TxMessage("WAKEUPWAKEUP"); 
+	MainLooper_SubmitDelayed(Protocol_RxProcessingDone, 700); 
+}
 
 void callback1(void) {
 	LED_Green_On(); 
-	LWTDAQ_Trigger(LED_Green_Off); 
+	LWTDAQ_Trigger(); 
 	MainLooper_SubmitDelayed(callback1, 1000); 
 }
 
-void UARTBLE_RxLineCallback2(void) {
-	int status = UARTBLE_Write(UARTBLE.lineParser.buffer, UARTBLE.lineParser.size); 
-	if(status != UARTBLE_WRITE_SUCCESS) {
-		MainLooper_SubmitDelayed(UARTBLE_RxLineCallback, 20); 
-		return; 
-	}
-	UARTBLE_RxLineRelease(); 
+void LWTDAQ_Callback(void) {
+	Packet_t packet; 
+	unsigned char payload[6]; 
+	packet.dir = 1; 
+	packet.pid = 0x20; // PacketInNewSample
+	packet.len = 6; 
+	packet.payload = payload; 
+	unsigned int uv = LWTDAQ.meas.uv; 
+	unsigned int vis = LWTDAQ.meas.vis; 
+	payload[0] = vis >> 16; 
+	payload[1] = vis >> 8; 
+	payload[2] = vis; 
+	payload[3] = uv >> 16; 
+	payload[4] = uv >> 8; 
+	payload[5] = uv; 
+	Protocol_TxPacket(&packet); 
+	LED_Green_Off(); 
 }
 
-void UARTBLE_RxLineCallback(void) {
-	MainLooper_SubmitDelayed(UARTBLE_RxLineCallback2, 10000); 
+void Protocol_OnRxPacket_Autoend(const Packet_t * packet) {
+	__nop();
+	if(!LWTDAQ.busy) {
+		LED_Green_On(); 
+		LWTDAQ_Trigger(); 
+	}
+}
+
+void Protocol_OnRxPacket(const Packet_t * packet) {
+	Protocol_OnRxPacket_Autoend(packet); 
+	Protocol_RxProcessingDone(); 
 }
 
 int main(void) {
@@ -41,7 +71,7 @@ int main(void) {
 	
 	LWTDAQ_Init(); 
 	
-	MainLooper_Submit(callback1); 
+	MainLooper_SubmitDelayed(callback, 100); 
 	MainLooper_Entry(); 
 	while(1); 
 }
