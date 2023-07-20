@@ -178,8 +178,12 @@ LWTDAQ_CompressedMeasurement_t LWTDAQ_CompressMeasurement(LWTDAQ_Measurement_t m
 			dig = meas.vis; 
 		else {
 			dig = meas.vis >> (exp - 1); 
-			if(dig & 1) dig += 2; 
+			if(dig & 1) dig += 1; 
 			dig >>= 1; 
+			if(dig & ~0xF) {
+				dig >>= 1; 
+				exp++; 
+			}
 		}
 		meas2.vis = dig << 4 | exp; 
 		if(meas2.vis == 0xFF) 
