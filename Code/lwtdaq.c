@@ -4,10 +4,10 @@
 
 #include "looper.h"
 
+#include "libsys.h"
 #include "libi2c.h"
 
 struct {
-	unsigned int acquisitions; 
 	unsigned int spuriousI2CWaits; 
 } LWTDAQ_Profiling; 
 
@@ -16,14 +16,26 @@ LWTDAQ_t LWTDAQ;
 #define LWTDAQ_STACK_SIZE 256
 unsigned char LWTDAQ_Stack[LWTDAQ_STACK_SIZE]; 
 
-void I2C_WriteSingleRegister(unsigned char devaddr, unsigned char regaddr, unsigned char data); 
+// Data handling functions
+LWTDAQ_CompressedMeasurement_t LWTDAQ_CompressMeasurement(LWTDAQ_Measurement_t meas); 
+
+// I2C functions
+void I2C_WriteRegister1(unsigned char devaddr, unsigned char regaddr, unsigned char data); 
 unsigned int I2C_ReadRegisters3(unsigned char devaddr, unsigned char regaddr); 
+
+// LTR functions
 unsigned int LTR390_Meas_UV(void); 
 unsigned int LTR390_Meas_VIS(void); 
 
+// LWTDAQ implementation
 void LWTDAQ_Entry(void); 
 void LWTDAQ_Init(void) {
-	LWTDAQ.busy = 0; 
+	LWTDAQ.started = 0; 
+	LWTDAQ.sampleReady = 0; 
+	LWTDAQ.timerTriggered = 0; 
+	
+	LWTDAQ.minutes = 0; 
+	LWTDAQ.seconds = 0; 
 	Task_InitStack(&LWTDAQ.task, LWTDAQ_Stack, LWTDAQ_STACK_SIZE, LWTDAQ_Entry); 
 }
 
@@ -31,10 +43,16 @@ void LWTDAQ_Resume(void) {
 	Task_Dispatch(&LWTDAQ.task); 
 }
 
-void LWTDAQ_Trigger(void) {
-	if(LWTDAQ.busy) return; 
-	LWTDAQ.busy = 1; 
+void LWTDAQ_Start(void) {
+	if(LWTDAQ.started) return; 
+	LWTDAQ.started = 1; 
 	MainLooper_Submit(LWTDAQ_Resume); 
+}
+
+void LWTDAQ_StartDelayed(unsigned int delayms) {
+	if(LWTDAQ.started) return; 
+	LWTDAQ.started = 1; 
+	MainLooper_SubmitDelayed(LWTDAQ_Resume, delayms); 
 }
 
 void LWTDAQ_Delayms(int ms) {
@@ -43,20 +61,93 @@ void LWTDAQ_Delayms(int ms) {
 }
 
 void LWTDAQ_Entry(void) {
-	for(;;) {
-		LWTDAQ.busy = 1; 
-		LWTDAQ.meas.uv   = LTR390_Meas_UV(); 
-		LWTDAQ.meas.vis  = LTR390_Meas_VIS(); 
-		LWTDAQ.meas.tick = MainLooper_GetTickAmount(); 
-		LWTDAQ_Profiling.acquisitions++; 
+	// LPTIM init
+	RCC->APBENR1 |= RCC_APBENR1_LPTIM1EN; 
+	__DSB(); 
+	RCC->CCIPR = RCC->CCIPR & 0xFFF3FFFF | 0x000C0000; // LSE
+	__DSB(); 
+	LPTIM1->CR = 0x1; 
+	LPTIM1->CFGR = 0x0; 
+	LPTIM1->ARR = 32768 - 1; 
+	LPTIM1->IER = 0x2; 
+	NVIC_EnableIRQ(TIM6_DAC_LPTIM1_IRQn); 
+	LPTIM1->CR |= 0x4; 
+	for(unsigned char firstCycle = 1;; firstCycle = 0) {
+		// Wait for LPTIM trigger
+		while(!LWTDAQ.timerTriggered) Task_Yield(); 
+		LWTDAQ.timerTriggered = 0; 
+		
+		LED_Green_On(); 
+		
+		unsigned short vis = LTR390_Meas_VIS() & 0xFFFF; 
+		unsigned short uv = LTR390_Meas_UV() & 0x1FFF; 
+		
+		LWTDAQ.measurement.vis = vis; 
+		LWTDAQ.measurement.uv = uv; 
+		
+		LWTDAQ.compressedMeasurement 
+			= LWTDAQ_CompressMeasurement(
+				LWTDAQ.measurement
+		); 
+		
+		char minuteOverflow = 0; 
+		if(!firstCycle) {
+			if(++LWTDAQ.seconds >= 60) {
+				LWTDAQ.minutes++; 
+				LWTDAQ.seconds = 0; 
+				minuteOverflow = 1; 
+			}
+		}
+		
+		LWTDAQ.sampleReady = 1; 
 		MainLooper_Submit(LWTDAQ_Callback); 
-		LWTDAQ.busy = 0; 
-		Task_Yield(); 
+		
+		if(minuteOverflow) {
+			// TODO
+			__nop(); 
+		}
+			
+		LED_Green_Off(); 
 	}
+}
+
+void TIM6_DAC_LPTIM1_IRQHandler(void) {
+	LPTIM1->ICR = 0x2; 
+	LWTDAQ.timerTriggered = 1; 
+	MainLooper_Submit(LWTDAQ_Resume); 
 }
 
 __weak void LWTDAQ_Callback(void) {
 	return; 
+}
+
+// Data handling
+LWTDAQ_CompressedMeasurement_t LWTDAQ_CompressMeasurement(LWTDAQ_Measurement_t meas) {
+	LWTDAQ_CompressedMeasurement_t meas2; 
+	// Truncate 8
+	if(meas.uv > 0xFF) meas.uv = 0xFF; 
+	meas2.uv = meas.uv; 
+	// Compressed 4-4
+	int bits = 32 - __clz(meas.vis); 
+	if(bits < 4) bits = 4; 
+	int exp = bits - 4; 
+	int dig; 
+	if(exp > 15) {
+		meas2.vis = 0xFF; 
+	}
+	else {
+		if(exp == 0) 
+			dig = meas.vis; 
+		else {
+			dig = meas.vis >> (exp - 1); 
+			if(dig & 1) dig += 2; 
+			dig >>= 1; 
+		}
+		meas2.vis = dig << 4 | exp; 
+		if(meas2.vis == 0xFF) 
+			meas2.vis = 0xEF; 
+	}
+	return meas2; 
 }
 
 // I2C operations
@@ -67,7 +158,7 @@ void I2C_PollingEnsureIdle(void) {
 	}
 }
 
-void I2C_WriteSingleRegister(unsigned char devaddr, unsigned char regaddr, unsigned char data) {
+void I2C_WriteRegister1(unsigned char devaddr, unsigned char regaddr, unsigned char data) {
 	unsigned char buf[1]; 
 	I2C_PollingEnsureIdle(); 
 	I2C_Data.devaddr = devaddr; 
@@ -107,22 +198,23 @@ void I2C_StateChangeCallback(int error) {
 // LTR390 operations
 #define I2C_ADDR_LTR390 0xA6
 
-unsigned int LTR390_Meas_UV(void) {
-	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x04, 0x26); // 18bit, 2000ms
-	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x05, 0x01); // 3x
-	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x00, 0x0A); // UV measurement
-	LWTDAQ_Delayms(110); 
-	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x00, 0x00); // Stop
-	return I2C_ReadRegisters3(I2C_ADDR_LTR390, 0x10); 	
-}
-
-unsigned int LTR390_Meas_VIS(void) {
-	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x04, 0x26); // 18bit, 2000ms
-	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x05, 0x01); // 3x
-	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x00, 0x02); // VIS measurement
-	LWTDAQ_Delayms(110); 
-	I2C_WriteSingleRegister(I2C_ADDR_LTR390, 0x00, 0x00); // Stop
+// Conversion factor (raw 16 bits): 2.4, we do 4-4 compression
+unsigned int LTR390_Meas_VIS(void) { 
+	I2C_WriteRegister1(I2C_ADDR_LTR390, 0x04, 0x46); // 16bit, 25ms
+	I2C_WriteRegister1(I2C_ADDR_LTR390, 0x05, 0x00); // 1x
+	I2C_WriteRegister1(I2C_ADDR_LTR390, 0x00, 0x02); // VIS measurement
+	LWTDAQ_Delayms(40); 
+	I2C_WriteRegister1(I2C_ADDR_LTR390, 0x00, 0x00); // Stop
 	return I2C_ReadRegisters3(I2C_ADDR_LTR390, 0x0D); 	
 }
 
+// Conversion factor (raw 13 bits): 1/10.9375, we only take 8 bits
+unsigned int LTR390_Meas_UV(void) { 
+	I2C_WriteRegister1(I2C_ADDR_LTR390, 0x04, 0x56); // 13bit, 12.5ms
+	I2C_WriteRegister1(I2C_ADDR_LTR390, 0x05, 0x04); // 18x
+	I2C_WriteRegister1(I2C_ADDR_LTR390, 0x00, 0x0A); // UV measurement
+	LWTDAQ_Delayms(30); 
+	I2C_WriteRegister1(I2C_ADDR_LTR390, 0x00, 0x00); // Stop
+	return I2C_ReadRegisters3(I2C_ADDR_LTR390, 0x10); 	
+}
 

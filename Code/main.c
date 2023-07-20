@@ -31,8 +31,9 @@ void Initialization(void) {
 
 void Main_Loop(void) {
 	if(!connected) return; 
-	LWTDAQ_Trigger(); 
-	MainLooper_SubmitDelayed(Main_Loop, 1000); 
+	LED_Blue_On(); 
+	MainLooper_SubmitDelayed(LED_Blue_Off, 50); 
+	MainLooper_SubmitDelayed(Main_Loop, 2000); 
 }
 
 void Protocol_OnRxMessage(const char * string, unsigned int length) {
@@ -40,12 +41,11 @@ void Protocol_OnRxMessage(const char * string, unsigned int length) {
 		for(int i = 0; i < 3; i++)
 			Protocol_TxMessage("WAKEUPWAKEUP"); 
 		connected = 1; 
-		LED_Blue_On(); 
-		MainLooper_SubmitDelayed(LED_Blue_Off, 250); 
 		MainLooper_SubmitDelayed(Main_Loop, 1000); 
 	}
 	else if(strcmprefix(string, length, "DISCONNECTED")) {
 		connected = 0; 
+		// TODO: enter sleep mode
 	}
 	Protocol_RxProcessingDone(); 
 }
@@ -55,6 +55,7 @@ void Protocol_OnRxPacket(const Packet_t * packet) {
 	Protocol_RxProcessingDone(); 
 }
 
+/*
 void LWTDAQ_Callback(void) {
 	if(!connected) return; 
 	Packet_t packet; 
@@ -75,22 +76,24 @@ void LWTDAQ_Callback(void) {
 	LED_Green_On(); 
 	MainLooper_SubmitDelayed(LED_Green_Off, 20); 
 }
+*/
 
 int main(void) {
+	// HW components
 	Sys_Init(); 
 	LED_Blue_On(); 
 	while(!Sys_LSEReady()); 
 	LED_Blue_Off(); 
-	
+	// OS
 	Task_Init(); 
 	MainLooper_Init(); 
-	
+	// SW components
 	I2C_HWInit(); 
 	UARTBLE_Init(); 
-	
 	LWTDAQ_Init(); 
-	
+	// Entry
 	MainLooper_Submit(Initialization); 
+	LWTDAQ_Start(); 
 	MainLooper_Entry(); 
 	while(1); 
 }
