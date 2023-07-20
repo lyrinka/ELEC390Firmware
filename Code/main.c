@@ -14,13 +14,17 @@ void callback1(void) {
 	MainLooper_SubmitDelayed(callback1, 1000); 
 }
 
-void UARTBLE_RxLineCallback(void) {
+void UARTBLE_RxLineCallback2(void) {
 	int status = UARTBLE_Write(UARTBLE.lineParser.buffer, UARTBLE.lineParser.size); 
 	if(status != UARTBLE_WRITE_SUCCESS) {
 		MainLooper_SubmitDelayed(UARTBLE_RxLineCallback, 20); 
 		return; 
 	}
 	UARTBLE_RxLineRelease(); 
+}
+
+void UARTBLE_RxLineCallback(void) {
+	MainLooper_SubmitDelayed(UARTBLE_RxLineCallback2, 10000); 
 }
 
 int main(void) {

@@ -19,6 +19,13 @@ unsigned char UARTBLE_TxBuffer[UARTBLE_TXBUFFER_SIZE];
 unsigned char UARTBLE_RxBuffer[UARTBLE_RXBUFFER_SIZE]; 
 unsigned char UARTBLE_LineBuffer[UARTBLE_LINEBUFFER_SIZE]; 
 
+struct {
+	unsigned int totaltx; 
+	unsigned int totalrx; 
+	unsigned int txoverflows; 
+	unsigned int rxoverruns;
+} UARTBLE_Profiling; 
+
 void UARTBLE_Init(void) {
 	// Data structure init
 	Stream_Init(&UARTBLE.txStream, UARTBLE_TxBuffer, UARTBLE_TXBUFFER_SIZE); 
@@ -77,6 +84,10 @@ int UARTBLE_Write(const unsigned char * line, unsigned int size) {
 
 void UARTBLE_LineParser(void); 
 void UARTBLE_RxLineRelease(void) {
+	// Debug clear
+	for(int i = 0; i < UARTBLE.lineParser.size; i++) {
+		UARTBLE.lineParser.buffer[i] = 0; 
+	}
 	UARTBLE.lineParser.enabled = 1; 
 	MainLooper_Submit(UARTBLE_LineParser); 
 }
@@ -97,10 +108,10 @@ void UARTBLE_LineParser(void) {
 					UARTBLE.lineParser.state = LINEPARSER_WAITLINE; 
 //				UARTBLE.lineParser.index = 0; 
 					if(index == 0) break; 
-					UARTBLE.lineParser.size = index - 1; 
+					UARTBLE.lineParser.size = index; 
 					UARTBLE.lineParser.enabled = 0; 
 					MainLooper_Submit(UARTBLE_RxLineCallback); 
-					break; 
+					return; 
 				}
 				int index = UARTBLE.lineParser.index; 
 				if(index >= UARTBLE.lineParser.capacity) {
@@ -134,20 +145,29 @@ __weak void UARTBLE_RxLineCallback(void) {
 
 void USART2_IRQHandler(void) {
 	unsigned int flags = USART2->ISR; 
-	if(flags & USART_ISR_TXE_TXFNF) {
+	if((flags & USART_ISR_TXE_TXFNF) && (USART2->CR1 & USART_CR1_TXEIE_TXFNFIE)) {
 		int data = Stream_Read(&UARTBLE.txStream); 
 		if(data == STREAM_READ_EMPTY) {
 			USART2->CR1 &= ~USART_CR1_TXEIE_TXFNFIE; 
 		}
 		else {
+			UARTBLE_Profiling.totaltx++; 
 			USART2->TDR = (unsigned char)data; 
 		}		
 	}
 	if(flags & USART_ISR_RXNE_RXFNE) {
 		int data = USART2->RDR; 
+		UARTBLE_Profiling.totalrx++; 
+		if(flags & USART_ISR_ORE) {
+			// TODO: how do we deal with overruns?
+			UARTBLE_Profiling.rxoverruns++; 
+			USART2->ICR = USART_ICR_ORECF; 
+		}
+		// TODO: add noise/frame error statistics
 		int status = Stream_Write(&UARTBLE.rxStream, data); 
 		if(status == STREAM_WRITE_FULL) {
 			// TODO: how do we deal with buffer overflow? 
+			UARTBLE_Profiling.txoverflows++; 
 		}
 		if(UARTBLE.lineParser.enabled) // Optional checking
 			MainLooper_Submit(UARTBLE_LineParser); 
