@@ -315,7 +315,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>2</Optim>
+            <Optim>1</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>1</OneElfS>
@@ -485,6 +485,11 @@
               <FileType>5</FileType>
               <FilePath>.\Library\libuartble.h</FilePath>
             </File>
+            <File>
+              <FileName>libpackets.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libpackets.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -509,6 +514,16 @@
               <FileName>libprotocol.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Library\libprotocol.h</FilePath>
+            </File>
+            <File>
+              <FileName>libpackets.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libpackets.c</FilePath>
+            </File>
+            <File>
+              <FileName>libpackets.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libpackets.h</FilePath>
             </File>
           </Files>
         </Group>

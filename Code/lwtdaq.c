@@ -15,7 +15,7 @@ struct {
 
 LWTDAQ_t LWTDAQ; 
 
-#define LWTDAQ_STACK_SIZE 256
+#define LWTDAQ_STACK_SIZE 512
 unsigned char LWTDAQ_Stack[LWTDAQ_STACK_SIZE]; 
 
 // Data handling functions

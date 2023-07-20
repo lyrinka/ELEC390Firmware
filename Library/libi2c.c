@@ -4,8 +4,8 @@
 
 #include "libi2c.h"
 
-I2C_Data_TypeDef I2C_Data; 
-I2C_State_TypeDef I2C_State;
+volatile I2C_Data_TypeDef I2C_Data; 
+volatile I2C_State_TypeDef I2C_State;
 
 unsigned int profile_irq_i2c1_cnt = 0; 
 

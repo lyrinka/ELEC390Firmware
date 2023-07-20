@@ -6,6 +6,7 @@
 #include "libi2c.h"
 #include "libuartble.h"
 
+#include "libpackets.h"
 #include "libprotocol.h"
 
 #include "lwtdaq.h"
@@ -53,24 +54,8 @@ void Protocol_OnRxPacket(const Packet_t * packet) {
 void LWTDAQ_Callback(void) {
 	if(!connected) return; 
 	Packet_t packet; 
-	unsigned char payload[6]; 
-	packet.dir = 1; 
-	packet.pid = 0x20; // PacketInNewSample
-	packet.len = 6; 
-	packet.payload = payload; 
-//unsigned int uv = LWTDAQ.measurement.uv; 
-	unsigned int vis = LWTDAQ.measurement.vis; 
-	payload[0] = 0; 
-	payload[1] = vis >> 8; 
-	payload[2] = vis; 
-	/*
-	payload[3] = 0; 
-	payload[4] = uv >> 8; 
-	payload[5] = uv; 
-	*/
-	payload[3] = LWTDAQ.minutes >> 16; 
-	payload[4] = LWTDAQ.minutes >> 8; 
-	payload[5] = LWTDAQ.minutes; 
+	unsigned char payload[PacketInNewSample_Length]; 
+	PacketInNewSample(&packet, payload, LWTDAQ.minutes, LWTDAQ.seconds, LWTDAQ.compressedMeasurement); 
 	Protocol_TxPacket(&packet); 
 }
 
