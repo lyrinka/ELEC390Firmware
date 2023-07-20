@@ -63,7 +63,6 @@ int I2C_Session(void) {
 	return 1; 
 }
 
-__weak void I2C_StateChangeCallback(int); 
 void I2C1_IRQHandler(void) {
 	profile_irq_i2c1_cnt++; 
 	// Clear OVR/UDR/PEC/TIMEOUT/ALERT error (irrelevant error)

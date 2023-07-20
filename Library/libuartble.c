@@ -28,7 +28,7 @@ void UARTBLE_Init(void) {
 	
 	UARTBLE.lineParser.buffer = UARTBLE_LineBuffer; 
 	UARTBLE.lineParser.capacity = UARTBLE_LINEBUFFER_SIZE; 
-	UARTBLE.lineParser.enabled = 0; 
+	UARTBLE.lineParser.enabled = 1; // TODO: change this back to 0
 	UARTBLE.lineParser.index = 0; 
 	UARTBLE.lineParser.size = 0; 
 	UARTBLE.lineParser.state = LINEPARSER_READLINE; 
@@ -40,7 +40,7 @@ void UARTBLE_Init(void) {
 	// PA2: BLE Rx, MCU Tx, AF1 (USART2TX)
 	// PA3: BLE Tx, MCU Rx, AF1 (USART2RX)
 	// No cross wiring
-	GPIOA->AFR[0] = GPIOA->AFR[0] & 0xFFFF00FF | 0x00002200; 
+	GPIOA->AFR[0] = GPIOA->AFR[0] & 0xFFFF00FF | 0x00001100; 
 	GPIOA->MODER = GPIOA->MODER & 0xFFFFFF0F | 0x000000A0; 
 	
 	// Enable and reset USART2 peripheral
@@ -75,11 +75,12 @@ int UARTBLE_Write(const unsigned char * line, unsigned int size) {
 	return UARTBLE_WRITE_SUCCESS; 
 }
 
+void UARTBLE_LineParser(void); 
 void UARTBLE_RxLineRelease(void) {
 	UARTBLE.lineParser.enabled = 1; 
+	MainLooper_Submit(UARTBLE_LineParser); 
 }
 
-__weak void UARTBLE_RxLineCallback(void); 
 void UARTBLE_LineParser(void) {
 	if(!UARTBLE.lineParser.enabled) return; 
 	for(;;) {
@@ -94,9 +95,9 @@ void UARTBLE_LineParser(void) {
 				if(data > '~' || data < ' ') {
 					int index = UARTBLE.lineParser.index; 
 					UARTBLE.lineParser.state = LINEPARSER_WAITLINE; 
-					UARTBLE.lineParser.index = 0; 
+//				UARTBLE.lineParser.index = 0; 
 					if(index == 0) break; 
-					UARTBLE.lineParser.size = UARTBLE.lineParser.index - 1; 
+					UARTBLE.lineParser.size = index - 1; 
 					UARTBLE.lineParser.enabled = 0; 
 					MainLooper_Submit(UARTBLE_RxLineCallback); 
 					break; 
@@ -104,7 +105,7 @@ void UARTBLE_LineParser(void) {
 				int index = UARTBLE.lineParser.index; 
 				if(index >= UARTBLE.lineParser.capacity) {
 					UARTBLE.lineParser.state = LINEPARSER_OVERFLOW; 
-					UARTBLE.lineParser.index = 0; 
+//				UARTBLE.lineParser.index = 0; 
 					break; 
 				}
 				UARTBLE.lineParser.buffer[index] = data; 
@@ -114,6 +115,8 @@ void UARTBLE_LineParser(void) {
 			case LINEPARSER_WAITLINE: {
 				if(data > '~' || data < ' ') break; 
 				UARTBLE.lineParser.state = LINEPARSER_READLINE; 
+				UARTBLE.lineParser.index = 1; 
+				UARTBLE.lineParser.buffer[0] = data; 
 				break; 
 			}
 			case LINEPARSER_OVERFLOW: {

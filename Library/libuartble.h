@@ -13,10 +13,10 @@ typedef struct {
 	struct {
 		unsigned char * buffer; 
 		unsigned int capacity; 
+		unsigned int size; 
+		unsigned int index; 
 		unsigned char enabled; 
 		unsigned char state; 
-		unsigned int index; 
-		unsigned int size; 
 	} lineParser; 
 } UARTBLE_t; 
 
@@ -28,6 +28,7 @@ void UARTBLE_Init(void);
 #define UARTBLE_WRITE_FAIL -1
 extern int UARTBLE_Write(const unsigned char * line, unsigned int size); 
 
+__weak void UARTBLE_RxLineCallback(void); 
 extern void UARTBLE_RxLineRelease(void); 
 
 #endif

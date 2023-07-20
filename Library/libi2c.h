@@ -27,4 +27,6 @@ extern I2C_State_TypeDef I2C_State;
 extern void I2C_HWInit(void); 
 extern int I2C_Session(void); 
 
+__weak void I2C_StateChangeCallback(int error); 
+
 #endif
