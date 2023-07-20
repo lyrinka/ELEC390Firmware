@@ -30,7 +30,7 @@ int Protocol_TxPacket(const Packet_t * packet) {
 		// TODO: how do we handle this? This should not happen. 
 		return PROTOCOL_TX_INTERNAL_ERR; 
 	}
-	status = UARTBLE_WriteWithPrefix('#', Protocol_EncodingBuffer, length); 
+	status = UARTBLE_WriteLineWithPrefix('#', Protocol_EncodingBuffer, length); 
 	if(status == UARTBLE_WRITE_FAIL) {
 		Protocol_Profiling.txfailures++; 
 		return PROTOCOL_TX_RETRY; 
@@ -40,6 +40,18 @@ int Protocol_TxPacket(const Packet_t * packet) {
 }
 
 int Protocol_TxMessage(const char * string) {
+	unsigned int index = 0; 
+	while(string[index]) index++; 
+	int status = UARTBLE_WriteLine((const unsigned char *)string, index); 
+	if(status == UARTBLE_WRITE_FAIL) {
+		Protocol_Profiling.txfailures++; 
+		return PROTOCOL_TX_RETRY; 
+	}
+	Protocol_Profiling.txmessages++; 
+	return PROTOCOL_TX_SUCCESS; 
+}
+
+int Protocol_TxMessageNoCRLF(const char * string) {
 	unsigned int index = 0; 
 	while(string[index]) index++; 
 	int status = UARTBLE_Write((const unsigned char *)string, index); 

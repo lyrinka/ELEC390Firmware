@@ -7,6 +7,8 @@
 #include "libsys.h"
 #include "libi2c.h"
 
+#include "libstorage.h"
+
 struct {
 	unsigned int spuriousI2CWaits; 
 } LWTDAQ_Profiling; 
@@ -76,6 +78,7 @@ void LWTDAQ_Entry(void) {
 	NVIC_EnableIRQ(TIM6_DAC_LPTIM1_IRQn); 
 	LPTIM1->CR |= 0x4; 
 	// Some other system functions
+	Storage_Init(); 
 	int ledCounter = 0; 
 	for(unsigned char firstCycle = 1;; firstCycle = 0) {
 		// Wait for LPTIM trigger
@@ -102,7 +105,7 @@ void LWTDAQ_Entry(void) {
 		LWTDAQ.sampleReady = 1; 
 		MainLooper_Submit(LWTDAQ_Callback); 
 		if(minuteOverflow) {
-			// TODO
+			Storage_Append(LWTDAQ.compressedMeasurement); 
 			__nop(); 
 		}
 		// LED handling

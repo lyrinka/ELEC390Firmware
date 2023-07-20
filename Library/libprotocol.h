@@ -10,6 +10,7 @@ extern Packet_t Protocol_DecodingPacket;
 #define PROTOCOL_TX_INTERNAL_ERR -2
 extern int Protocol_TxPacket(const Packet_t * packet); 
 extern int Protocol_TxMessage(const char * string); 
+extern int Protocol_TxMessageNoCRLF(const char * string); 
 
 __weak void Protocol_OnRxPacket(const Packet_t * packet); 
 __weak void Protocol_OnRxBrokenPacket(const char * input, unsigned int length); 

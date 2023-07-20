@@ -74,6 +74,21 @@ void UARTBLE_Init(void) {
 
 int UARTBLE_Write(const unsigned char * line, unsigned int size) {
 	critEnter(); 
+	if(size > Stream_GetSizeRemaining(&UARTBLE.txStream)) {
+		critExit(); 
+		return UARTBLE_WRITE_FAIL; 
+	}
+	for(int i = 0; i < size; i++) {
+		Stream_Write(&UARTBLE.txStream, line[i]); 
+	}
+	USART2->CR1 |= USART_CR1_TXEIE_TXFNFIE; 
+	UARTBLE_Profiling.txlines++; 
+	critExit(); 
+	return UARTBLE_WRITE_SUCCESS; 
+}
+
+int UARTBLE_WriteLine(const unsigned char * line, unsigned int size) {
+	critEnter(); 
 	if(size + 2 > Stream_GetSizeRemaining(&UARTBLE.txStream)) {
 		critExit(); 
 		return UARTBLE_WRITE_FAIL; 
@@ -89,7 +104,7 @@ int UARTBLE_Write(const unsigned char * line, unsigned int size) {
 	return UARTBLE_WRITE_SUCCESS; 
 }
 
-int UARTBLE_WriteWithPrefix(char prefix, const unsigned char * line, unsigned int size) {
+int UARTBLE_WriteLineWithPrefix(char prefix, const unsigned char * line, unsigned int size) {
 	critEnter(); 
 	if(size + 3 > Stream_GetSizeRemaining(&UARTBLE.txStream)) {
 		critExit(); 

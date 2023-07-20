@@ -530,6 +530,16 @@
               <FileType>5</FileType>
               <FilePath>.\Library\libstream.h</FilePath>
             </File>
+            <File>
+              <FileName>libstorage.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libstorage.c</FilePath>
+            </File>
+            <File>
+              <FileName>libstorage.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libstorage.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

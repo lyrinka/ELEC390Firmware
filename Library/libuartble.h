@@ -23,7 +23,8 @@ void UARTBLE_Init(void);
 #define UARTBLE_WRITE_SUCCESS 0
 #define UARTBLE_WRITE_FAIL -1
 extern int UARTBLE_Write(const unsigned char * line, unsigned int size); 
-extern int UARTBLE_WriteWithPrefix(char prefix, const unsigned char * line, unsigned int size); 
+extern int UARTBLE_WriteLine(const unsigned char * line, unsigned int size); 
+extern int UARTBLE_WriteLineWithPrefix(char prefix, const unsigned char * line, unsigned int size); 
 
 __weak void UARTBLE_RxLineCallback(void); 
 extern void UARTBLE_RxLineRelease(void); 
