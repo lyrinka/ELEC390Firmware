@@ -53,8 +53,8 @@ void MainLooper_SchedulerExecution(void) {
 void MainLooper_IdlePeriod(void) {
 	__disable_irq(); 
 	if(MainLooper.handler.size == 0) {
-//	__wfi(); 
-		while(!(SCB->ICSR & SCB_ICSR_VECTPENDING_Msk)); 
+		__wfi(); 
+	//while(!(SCB->ICSR & SCB_ICSR_VECTPENDING_Msk)); 
 	}
 	__enable_irq(); 
 	__nop();
