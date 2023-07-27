@@ -1,36 +1,51 @@
 #include <stm32g071xx.h>
 
-#include "liblwt.h"
+#include "looper.h"
 
 #include "libsys.h"
 
-unsigned char stack1[256]; 
-
-LWT_t thread1; 
 
 void delayms(int); 
-int func1(int state); 
+
+
+void func1(int * counter, int param) {
+	if(*counter >= 4) return; 
+	switch(param) {
+		case 0: {
+			LED_Blue_On(); 
+			MainLooper_Submit2(func1, counter, 1); 
+			break; 
+		}
+		case 1: {
+			delayms(10); 
+			MainLooper_Submit2(func1, counter, 2); 
+			break; 
+		}
+		case 2: {
+			LED_Blue_Off(); 
+			MainLooper_Submit2(func1, counter, 3); 
+			break; 
+		}
+		case 3: {
+			delayms(490); 
+			(*counter)++; 
+			MainLooper_Submit2(func1, counter, 0); 
+			break; 
+		}
+	}	
+}
 
 int main(void) {
 	Sys_Init(); 
-	LWT_Init(); 
-	LWT_Create(&thread1, stack1, sizeof(stack1), func1); 
 	
-	for(;;) {
-		int param = LWT_Dispatch1(&thread1);
-		if(param) delayms(param); 
-	}
+	MainLooper_Init(); 
+	
+	int variable = 0; 
+	MainLooper_Submit2(func1, &variable, 0); 
+	
+	MainLooper_Run(); 
 }
 
-int func1(int state) {
-//	for(;;) {
-		LED_Blue_On(); 
-		LWT_Yield2(10); 
-		LED_Blue_Off(); 
-//		LWT_Yield2(490); 
-//	}
-	return 490; 
-}
 
 void delayms(int ms) {
 	SysTick->CTRL = 0x4; 

@@ -44,7 +44,9 @@ void LWT_Init(void) {
 	LWT_Profiling.dispatches = 0; 
 	LWT_Profiling.yields = 0; 
 	LWT_Profiling.inits = 0; 
+	
 	LWT_Current = 0; 
+	
 	SCB->SHP[0] = SCB->SHP[0] & 0x00FFFFFF; 
 	SCB->SHP[1] = SCB->SHP[1] & 0xFF00FFFF | 0x00FF0000; 
 }
