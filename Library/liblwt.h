@@ -1,7 +1,7 @@
 #ifndef LIBLWT_H__
 #define LIBLWT_H__
 
-// Type: LWT control block
+// Type: LWT object
 typedef struct {
 	unsigned char * stackPointer; 
 	unsigned char * stackBase; 
@@ -9,15 +9,15 @@ typedef struct {
 	void * entryPoint; 
 } LWT_t;
 
-// Object: This component has profiling data: LWT_Profiling_t
+// Object: This component has profiling data: LWT_Profiling
 // Object: LWT self reference (seen from LWT), last LWT (seen from kernel)
 extern LWT_t * LWT_Current; 
 
-// Procedure: LWT management environment initialization
+// Procedure: LWT static initialization
 extern void LWT_Init(void); 
 
-// Procedure: LWT control block initialization
-extern void LWT_Create(LWT_t * lwt, unsigned char * stackBase, unsigned int stackSize, void * entryPoint); 
+// Procedure: LWT object construction
+extern void LWT_New(LWT_t * lwt, unsigned char * stackBase, unsigned int stackSize, void * entryPoint); 
 
 // Procedure: LWT dispatching and yielding
 // Always call from kernel (main thread)

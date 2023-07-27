@@ -37,10 +37,8 @@ typedef struct {
 	}; 
 } StackFrame_t; 
 
-
 LWT_Profiling_t LWT_Profiling; 
 LWT_t * LWT_Current; 
-
 
 void LWT_Init(void) {
 	LWT_Profiling.dispatches = 0; 

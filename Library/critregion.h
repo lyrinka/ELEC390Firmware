@@ -1,5 +1,5 @@
-#ifndef LIBMUTEX_H__
-#define LIBMUTEX_H__
+#ifndef CRITREGION_H__
+#define CRITREGION_H__
 
 #include <stm32g071xx.h>
 
