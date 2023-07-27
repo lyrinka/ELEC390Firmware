@@ -1,6 +1,12 @@
 #include <stm32g071xx.h>
 
-#include "libtask.h"
+#include "liblwt.h"
+
+typedef struct {
+	unsigned long long dispatches; 
+	unsigned long long yields; 
+	unsigned int inits; 
+} LWT_Profiling_t; 
 
 typedef struct {
 	union {
@@ -31,45 +37,68 @@ typedef struct {
 	}; 
 } StackFrame_t; 
 
-struct {
-	unsigned long long dispatches; 
-	unsigned long long yields; 
-	unsigned int inits; 
-} Task_Profiling; 
 
-void Task_Init(void) {
-	// TODO: confirm these priorities
-	SCB->SHP[0] = SCB->SHP[0] & 0x0000FFFF; 
-	SCB->SHP[1] = SCB->SHP[1] & 0xFFFF0000 | 0x0000C000; 
+LWT_Profiling_t LWT_Profiling; 
+LWT_t * LWT_Current; 
+
+
+void LWT_Init(void) {
+	LWT_Profiling.dispatches = 0; 
+	LWT_Profiling.yields = 0; 
+	LWT_Profiling.inits = 0; 
+	LWT_Current = 0; 
+	SCB->SHP[0] = SCB->SHP[0] & 0x00FFFFFF; 
+	SCB->SHP[1] = SCB->SHP[1] & 0xFF00FFFF | 0x00FF0000; 
 }
 
-void Task_InitStack(Task_t * task, unsigned char * stackBase, unsigned int stackSize, Task_Runnable_t entryPoint) {
+void LWT_Entry(int param) {
+	for(;;) param = LWT_Yield2(((int(*)(int))LWT_Current->entryPoint)(param)); 
+}
+void LWT_Create(LWT_t * lwt, unsigned char * stackBase, unsigned int stackSize, void * entryPoint) {
+	lwt->entryPoint = entryPoint; 
 	// TODO: confirm stack alignment logic
-	task->stackBase = stackBase; 
+	lwt->stackBase = stackBase; 
 	unsigned int stackEnd = (unsigned int)(stackBase + stackSize); 
 	if(stackEnd & 0x7) stackSize -= stackEnd & 0x7;
-	task->stackSize = stackSize; 
+	lwt->stackSize = stackSize; 
 	StackFrame_t * stackFrame = (StackFrame_t *)(stackBase + stackSize - sizeof(StackFrame_t)); 
-	task->stackPointer = (unsigned char *)stackFrame; 
+	lwt->stackPointer = (unsigned char *)stackFrame; 
 	for(int i = 0; i < 8; i++) stackFrame->contextFrame[i] = 0xDEADBEF0 + i; 
-	for(int i = 1; i < 5; i++) stackFrame->hardwareFrame[i] = 0xDEADBEE0 + i; 
-	stackFrame->r0 = (unsigned int)task; 
-	stackFrame->lr = 0x22222222; 
-	stackFrame->pc = ((unsigned int)entryPoint) | 0x1; 
+	for(int i = 0; i < 5; i++) stackFrame->hardwareFrame[i] = 0xDEADBEE0 + i; 
+	stackFrame->lr = 0xDEADCAFE; 
+	stackFrame->pc = ((unsigned int)LWT_Entry) | 0x1; 
 	stackFrame->psr = 0x01000000; 
-	Task_Profiling.inits++; 
+	LWT_Profiling.inits++; 
 }
 
-__svc(0x0) unsigned char * internalSvcDispatch(unsigned char *); 
-void Task_Dispatch(Task_t * task) {
-	Task_Profiling.dispatches++; 
-	task->stackPointer = internalSvcDispatch(task->stackPointer); 
+__asm unsigned long long internalSvcDispatch(unsigned long long args) {
+		SVC		0x0
+		BX		LR
+}
+int LWT_Dispatch1(LWT_t * lwt) {
+	return LWT_Dispatch2(lwt, 0); 
+}
+int LWT_Dispatch2(LWT_t * lwt, int param) {
+	LWT_Profiling.dispatches++; 
+	LWT_Current = lwt; 
+	unsigned long long packed; 
+	packed = (unsigned long long)lwt->stackPointer; 
+	packed |= (unsigned long long)param << 32; 
+	packed = internalSvcDispatch(packed); 
+	lwt->stackPointer = (unsigned char *)(unsigned int)packed; 
+	return packed >> 32; 
 }
 
-__svc(0x1) void internalSvcYield(void); 
-void Task_Yield(void) {
-	Task_Profiling.yields++; 
-	internalSvcYield(); 
+__asm int internalSvcYield(int args) {
+		SVC		0x1
+		BX		LR
+}
+int LWT_Yield1(void) {
+	return LWT_Yield2(0); 
+}
+int LWT_Yield2(int param) {
+	LWT_Profiling.yields++; 
+	return internalSvcYield(param); 
 }
 
 __asm void SVC_Handler(void) {
@@ -88,6 +117,7 @@ __asm void PendSV_Handler(void) {
 		BEQ			PendSV_Handler_PSPToMSP
 PendSV_Handler_MSPToPSP
 		LDR			R0, [SP]
+		LDR			R1, [SP, #4]
 		PUSH		{R4-R7}
 		MOV			R4, R8
 		MOV			R5, R9
@@ -111,9 +141,11 @@ PendSV_Handler_MSPToPSP
 		ADDS		R0, #32
 //	Workaround end
 		MSR			PSP, R0
+		STR			R1, [R0]
 		BX			LR
 PendSV_Handler_PSPToMSP
 		MRS			R0, PSP
+		LDR			R1, [R0]
 //	STMDB		R0!,{R4-R11}
 //	STMDB workaround start
 		SUBS		R0, #32
@@ -137,5 +169,6 @@ PendSV_Handler_PSPToMSP
 		MOV			R11, R7
 		POP			{R4-R7}
 		STR			R0, [SP]
+		STR			R1, [SP, #4]
 		BX			LR
 }
