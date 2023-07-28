@@ -734,6 +734,16 @@
               <FileType>5</FileType>
               <FilePath>.\Library\libprotocol.h</FilePath>
             </File>
+            <File>
+              <FileName>libcodec.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libcodec.c</FilePath>
+            </File>
+            <File>
+              <FileName>libcodec.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libcodec.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
