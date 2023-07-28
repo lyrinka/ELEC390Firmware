@@ -5,6 +5,7 @@
 
 #include "libsys.h"
 
+// In MainLooper context
 void BleThread_HandleConnectionFlow(int isConnected) {
 	if(isConnected) {
 		MainLooper_SubmitDelayed(LED_Green_On, 0); 
@@ -16,11 +17,13 @@ void BleThread_HandleConnectionFlow(int isConnected) {
 	}
 }
 
+// In MainThread LWT context
 void DAQ_SubmitBatteryMeas(DAQ_BattMeas_t meas) {
 	if(!BleThread_IsConnected()) return; 
 	// TODO: battery meas
 }
 
+// In MainThread LWT context
 void DAQ_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int second) {
 	if(!BleThread_IsConnected()) return; 
 	Packet_t packet; 
@@ -34,8 +37,8 @@ void DAQ_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int second) {
 	BleThread_TxPacket(&packet); 
 }
 
+// In MainThread LWT context
 void DAQ_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample) {
-	
 	if(!BleThread_IsConnected()) return; 
 	Packet_t packet; 
 	unsigned char payload[PacketInNewOpticalEstimation_Length]; 
@@ -49,6 +52,32 @@ void DAQ_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample) 
 	BleThread_TxPacket(&packet); 
 }
 
-void BleThread_HandlePacket(const Packet_t * packet) {
-	return; 
+// In BleThread LWT context
+void Connection_HandlePacketOutRequestSyncInfo(Packet_t * packet) {
+	if(!BleThread_IsConnected()) return; 
+	
+	unsigned int sampleStart, sampleCount; 
+	Storage_GetRecordedRange(&sampleStart, &sampleCount); 
+	
+	PacketInSyncInfo(
+		packet, 
+		sampleStart, 
+		sampleCount, 
+		DAQ_State.estSeconds, 
+		DAQ_OPTICAL_EVAL_INTERVAL
+	); 
+	BleThread_TxPacket(packet); 
+}
+
+// In BleThread LWT context
+void BleThread_HandlePacket(Packet_t * packet) {
+	if(packet->dir != PACKET_DIR_OUT) return; 
+	switch(packet->pid) {
+		default: break; 
+		case PacketOutRequestSyncInfo_ID: {
+			if(packet->len != PacketOutRequestSyncInfo_Length) break; 
+			Connection_HandlePacketOutRequestSyncInfo(packet); 
+			break; 
+		}
+	}
 }

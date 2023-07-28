@@ -12,6 +12,11 @@ BleThread_State_t BleThread_State;
 unsigned char BleThread_Stack[BLETHREAD_STACK_SIZE];  
 
 void BleThread_Init(void) {
+	// Data structure
+	BleThread_State.totalTxPacket = 0; 
+	BleThread_State.totalRxPacket = 0; 
+	BleThread_State.totalTxMessage = 0; 
+	BleThread_State.totalRxMessage = 0; 
 	// UART middleware
 	void BleThread_SerialInit(void); 
 	BleThread_SerialInit(); 
@@ -123,6 +128,7 @@ void BleThread_TxRawMessage(const char * string) {
 void BleThread_TxMessage(const char * string) {
 	BleThread_TxRawMessage(string); 
 	BleThread_TxRawMessage("\r\n"); 
+	BleThread_State.totalTxMessage++; 
 }
 
 void BleThread_TxPacket(const Packet_t * packet) {
@@ -134,11 +140,12 @@ void BleThread_TxPacket(const Packet_t * packet) {
 	bufferStruct.buffer[bufferStruct.length] = 0; 
 	BleThread_TxRawMessage("#"); 
 	BleThread_TxMessage((char *)bufferStruct.buffer); 
+	BleThread_State.totalTxPacket++; 
 }
 
 void BleThread_Entry(void) {
-	void BleThread_InternalHandleMessage(const char * string, unsigned int length); 
-	void BleThread_InternalHandlePacket(const Packet_t * packet); 
+	void BleThread_InternalHandleMessage(char * string, unsigned int length); 
+	void BleThread_InternalHandlePacket(Packet_t * packet); 
 	
 	Packet_t packet; 
 	packet.capacity = BLETHREAD_LINEBUFFER_SIZE > 255 ? 255 : BLETHREAD_LINEBUFFER_SIZE; 
@@ -147,9 +154,11 @@ void BleThread_Entry(void) {
 		int length = BleThread_ReadLine(BleThread_RxLineBuffer, BLETHREAD_LINEBUFFER_SIZE); 
 		int status = BleThread_ParsePacket(BleThread_RxLineBuffer, length, &packet); 
 		if(status) {
-			BleThread_InternalHandleMessage((const char *)BleThread_RxLineBuffer, length); 
+			BleThread_State.totalRxMessage++; 
+			BleThread_InternalHandleMessage((char *)BleThread_RxLineBuffer, length); 
 		}
 		else {
+			BleThread_State.totalRxPacket++; 
 			BleThread_InternalHandlePacket(&packet); 
 		}
 	}
@@ -191,7 +200,7 @@ void BleThread_Lambda2(void) {
 	BleThread_HandleConnectionFlow(0); 
 }
 
-void BleThread_InternalHandleMessage(const char * string, unsigned int length) {
+void BleThread_InternalHandleMessage(char * string, unsigned int length) {
 	if(strcmpx("CONNECTED")) {
 		BleThread_TxMessage("WAKEUPWAKEUPWAKEUPWAKEUPWAKEUP"); 
 		if(BleThread_State.stage == BLE_STAGE_DISCONNECTED) {
@@ -208,7 +217,7 @@ void BleThread_InternalHandleMessage(const char * string, unsigned int length) {
 	}
 }
 
-void BleThread_InternalHandlePacket(const Packet_t * packet) {
+void BleThread_InternalHandlePacket(Packet_t * packet) {
 	if(BleThread_State.stage != BLE_STAGE_ESTABLISHED) return; 
 	BleThread_HandlePacket(packet); 
 }
@@ -221,6 +230,6 @@ __weak void BleThread_HandleConnectionFlow(int isConnected) {
 	return; 
 }
 
-__weak void BleThread_HandlePacket(const Packet_t * packet) {
+__weak void BleThread_HandlePacket(Packet_t * packet) {
 	return; 
 }

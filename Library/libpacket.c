@@ -44,3 +44,27 @@ int PacketInNewOpticalEstimation(
 	packet->payload[6] = interval; 
 	return PACKET_CONSTRUCT_SUCCESS; 
 }
+
+int PacketInSyncInfo(
+	Packet_t * packet, 
+	unsigned int sampleStart, 
+	unsigned int sampleCount, 
+	unsigned char secondCounter, 
+	unsigned char interval
+) {
+	if(packet->capacity < PacketInSyncInfo_Length) return PACKET_CONSTRUCT_FAIL; 
+	packet->dir = PACKET_DIR_IN; 
+	packet->pid = PacketInSyncInfo_ID; 
+	packet->len = PacketInSyncInfo_Length; 
+	packet->payload[0] = sampleStart >> 24; 
+	packet->payload[1] = sampleStart >> 16; 
+	packet->payload[2] = sampleStart >> 8; 
+	packet->payload[3] = sampleStart; 
+	packet->payload[4] = sampleCount >> 24; 
+	packet->payload[5] = sampleCount >> 16; 
+	packet->payload[6] = sampleCount >> 8; 
+	packet->payload[7] = sampleCount; 
+	packet->payload[8] = secondCounter; 
+	packet->payload[9] = interval; 
+	return PACKET_CONSTRUCT_SUCCESS; 
+}

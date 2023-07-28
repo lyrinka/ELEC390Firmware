@@ -15,6 +15,10 @@ typedef struct {
 		Stream_t tx; 
 		Stream_t rx; 
 	} streams; 
+	unsigned int totalTxPacket; 
+	unsigned int totalRxPacket; 
+	unsigned int totalTxMessage; 
+	unsigned int totalRxMessage; 
 } BleThread_State_t; 
 
 extern BleThread_State_t BleThread_Stat; 
@@ -33,6 +37,6 @@ extern int BleThread_IsConnected(void);
 __weak void BleThread_HandleConnectionFlow(int isConnected); 
 
 // Inside of thread context, where local variables are stacked
-__weak void BleThread_HandlePacket(const Packet_t * packet); 
+__weak void BleThread_HandlePacket(Packet_t * packet); 
 
 #endif

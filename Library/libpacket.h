@@ -30,6 +30,7 @@ extern void Packet_New(Packet_t * packet, unsigned char * payload, int capacity)
 #define PACKET_CONSTRUCT_SUCCESS 0
 #define PACKET_CONSTRUCT_FAIL -1
 
+// PacketInNewOpticalSample
 #define PacketInNewOpticalSample_ID 0x20
 #define PacketInNewOpticalSample_Length 6
 extern int PacketInNewOpticalSample(
@@ -38,6 +39,7 @@ extern int PacketInNewOpticalSample(
 	const unsigned char * meas2
 ); 
 
+// PacketInNewOpticalEstimation
 #define PacketInNewOpticalEstimation_ID 0x21
 #define PacketInNewOpticalEstimation_Length 7
 extern int PacketInNewOpticalEstimation(
@@ -47,5 +49,19 @@ extern int PacketInNewOpticalEstimation(
 	const unsigned char * meas2
 ); 
 
+// PacketInSyncInfo
+#define PacketInSyncInfo_ID 0x22
+#define PacketInSyncInfo_Length 10
+extern int PacketInSyncInfo(
+	Packet_t * packet, 
+	unsigned int sampleStart, 
+	unsigned int sampleCount, 
+	unsigned char secondCounter, 
+	unsigned char interval
+); 
+
+// PacketOutRequestSyncInfo
+#define PacketOutRequestSyncInfo_ID 0x22
+#define PacketOutRequestSyncInfo_Length 0
 
 #endif
