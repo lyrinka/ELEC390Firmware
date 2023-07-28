@@ -56,7 +56,7 @@ void LWT_Init(void) {
 void LWT_Entry(int param) {
 	for(;;) param = LWT_Yield2(((int(*)(int))LWT_Current->entryPoint)(param)); 
 }
-void LWT_Create(LWT_t * lwt, unsigned char * stackBase, unsigned int stackSize, void * entryPoint) {
+void LWT_New(LWT_t * lwt, unsigned char * stackBase, unsigned int stackSize, void * entryPoint) {
 	lwt->entryPoint = entryPoint; 
 	// TODO: confirm stack alignment logic
 	lwt->stackBase = stackBase; 

@@ -82,7 +82,7 @@ void I2C1_IRQHandler(void) {
 		I2C1->ICR = 0x0020; 
 		if(I2C_State.busy) {
 			I2C_State.busy = 0; 
-			I2C_StateChangeCallback(I2C_State.error); 
+			I2C_SessionDoneCallback(I2C_State.error); 
 		}
 	}
 	if(flags & 0x0040) { // TC (TCR not used)
@@ -108,6 +108,6 @@ void I2C1_IRQHandler(void) {
 	}
 }
 
-__weak void I2C_StateChangeCallback(int error) {
+__weak void I2C_SessionDoneCallback(int error) {
 	return; 
 }
