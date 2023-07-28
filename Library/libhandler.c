@@ -31,7 +31,10 @@ void Handler_New(Handler_t * handler, Handler_RunnableWrapper_t * storage, unsig
 }
 
 int Handler_Submit1(Handler_t * handler, void * runnable) {
-	return Handler_Submit2(handler, runnable, 0, 0); 
+	Handler_RunnableWrapper_t wrapper = {
+		runnable, 0, 0, 
+	}; 
+	return Handler_Submit3(handler, wrapper); 
 }
 
 int Handler_Submit2(Handler_t * handler, void * runnable, void * context, int param) {

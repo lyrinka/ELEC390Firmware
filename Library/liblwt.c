@@ -47,6 +47,8 @@ void LWT_Init(void) {
 	
 	LWT_Current = 0; 
 	
+	// SVC priority: 0
+	// PendSV priority: 3
 	SCB->SHP[0] = SCB->SHP[0] & 0x00FFFFFF; 
 	SCB->SHP[1] = SCB->SHP[1] & 0xFF00FFFF | 0x00FF0000; 
 }
