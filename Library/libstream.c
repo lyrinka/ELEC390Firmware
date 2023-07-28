@@ -1,6 +1,6 @@
 #include "libstream.h"
 
-#include "libmutex.h"
+#include "critregion.h"
 
 void Stream_Init(Stream_t * stream, unsigned char * storage, unsigned int size) {
 	stream->buffer = storage; 
@@ -9,11 +9,9 @@ void Stream_Init(Stream_t * stream, unsigned char * storage, unsigned int size) 
 	stream->tail = 0; 
 	stream->size = 0; 
 	stream->maxSizeReached = 0; 
-	stream->profiling = 0; 
-}
-
-void Stream_AttachProfileObj(Stream_t * stream, Stream_Profiling_t * profiling) {
-	stream->profiling = profiling; 
+	stream->totalWritten = 0; 
+	stream->totalRead = 0; 
+	stream->totalDropped = 0; 
 }
 
 unsigned int Stream_GetSize(const Stream_t * stream) {
@@ -27,9 +25,8 @@ unsigned int Stream_GetSizeRemaining(const Stream_t * stream) {
 int Stream_Write(Stream_t * stream, unsigned char data) {
 	critEnter(); 
 	if(stream->size >= stream->capacity) {
-		// TODO: how do we handle this overflow?
-		if(stream->profiling)
-			stream->profiling->dropped++; 
+		// TODO: how do we log this overflow?
+		stream->totalDropped++; 
 		critExit(); 
 		return STREAM_WRITE_FULL; 
 	}
@@ -39,13 +36,12 @@ int Stream_Write(Stream_t * stream, unsigned char data) {
 	stream->head = head; 
 	if(++stream->size > stream->maxSizeReached)
 		stream->maxSizeReached = stream->size; 
-	if(stream->profiling)
-		stream->profiling->written++; 
+	stream->totalWritten++; 
 	critExit(); 
 	return STREAM_WRITE_SUCCESS; 
 }
 
-int Stream_Read(Stream_t * stream) {
+int Stream_Read(Stream_t * stream, unsigned char * data0) {
 	critEnter(); 
 	if(stream->size == 0) {
 		critExit(); 
@@ -56,7 +52,8 @@ int Stream_Read(Stream_t * stream) {
 	if(++tail >= stream->capacity) tail = 0; 
 	stream->tail = tail; 
 	stream->size--; 
-	stream->profiling->read++; 
+	stream->totalRead++; 
 	critExit(); 
-	return data; 
+	*data0 = data; 
+	return STREAM_READ_SUCCESS; 
 }
