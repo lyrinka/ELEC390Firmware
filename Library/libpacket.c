@@ -68,3 +68,45 @@ int PacketInSyncInfo(
 	packet->payload[9] = interval; 
 	return PACKET_CONSTRUCT_SUCCESS; 
 }
+
+int PacketInSyncData(
+	Packet_t * packet, 
+	unsigned int sampleStart, 
+	unsigned char sampleCount
+) {
+	if(packet->capacity < PacketInSyncData_BaseLength + 2 * sampleCount) return PACKET_CONSTRUCT_FAIL; 
+	packet->dir = PACKET_DIR_IN; 
+	packet->pid = PacketInSyncData_ID; 
+	packet->len = PacketInSyncData_BaseLength + 2 * sampleCount; 
+	packet->payload[0] = sampleStart >> 24; 
+	packet->payload[1] = sampleStart >> 16; 
+	packet->payload[2] = sampleStart >> 8; 
+	packet->payload[3] = sampleStart; 
+	packet->payload[4] = sampleCount; 
+	return PACKET_CONSTRUCT_SUCCESS; 
+}
+
+void PacketInSyncData_WriteSample(
+	Packet_t * packet, 
+	unsigned int index, 
+	const unsigned char * meas2
+) {
+	packet->payload[5 + index * 2] = meas2[0]; 
+	packet->payload[6 + index * 2] = meas2[1]; 
+}
+
+unsigned int PacketOutRequestSyncData_ReadStartSample(const Packet_t * packet) {
+	unsigned int val = 0; 
+	val |= packet->payload[0] << 24; 
+	val |= packet->payload[1] << 16; 
+	val |= packet->payload[2] << 8; 
+	val |= packet->payload[3]; 
+	return val; 
+}
+
+unsigned char PacketOutRequestSyncData_ReadCount(const Packet_t * packet) {
+	unsigned char val = packet->payload[4]; 
+	if(val > MAX_SYNC_REQUEST_COUNT) 
+		val = MAX_SYNC_REQUEST_COUNT; 
+	return val; 
+}

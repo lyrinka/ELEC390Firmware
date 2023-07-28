@@ -68,6 +68,35 @@ void Connection_HandlePacketOutRequestSyncInfo(Packet_t * packet) {
 	); 
 	BleThread_TxPacket(packet); 
 }
+// In BleThread context
+void Connection_HandlePacketOutRequestSyncData(Packet_t * packet) {
+	if(!BleThread_IsConnected()) return; 
+	
+	unsigned int sampleStart = PacketOutRequestSyncData_ReadStartSample(packet); 
+	int sampleCount = PacketOutRequestSyncData_ReadCount(packet); 
+	
+	PacketInSyncData(
+		packet, 
+		sampleStart, 
+		sampleCount
+	); 
+	
+	for(int i = 0; i < sampleCount; i++) {
+		DAQ_OptiMeasCM_t meas; 
+		int status = Storage_Read(sampleStart + i, &meas); 
+		if(status != STORAGE_READ_SUCCESS) {
+			meas.uv = 0xFF; 
+			meas.vis = 0xFF; 
+		}
+		PacketInSyncData_WriteSample(
+			packet, 
+			i, 
+			(unsigned char *)&meas
+		); 
+	}
+	
+	BleThread_TxPacket(packet); 
+}
 
 // In BleThread LWT context
 void BleThread_HandlePacket(Packet_t * packet) {
@@ -77,6 +106,11 @@ void BleThread_HandlePacket(Packet_t * packet) {
 		case PacketOutRequestSyncInfo_ID: {
 			if(packet->len != PacketOutRequestSyncInfo_Length) break; 
 			Connection_HandlePacketOutRequestSyncInfo(packet); 
+			break; 
+		}
+		case PacketOutRequestSyncData_ID: {
+			if(packet->len != PacketOutRequestSyncData_Length) break; 
+			Connection_HandlePacketOutRequestSyncData(packet); 
 			break; 
 		}
 	}

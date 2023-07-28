@@ -60,8 +60,29 @@ extern int PacketInSyncInfo(
 	unsigned char interval
 ); 
 
+// PacketInSyncData
+#define PacketInSyncData_ID 0x23
+#define PacketInSyncData_BaseLength 5
+extern int PacketInSyncData(
+	Packet_t * packet, 
+	unsigned int sampleStart, 
+	unsigned char sampleCount
+); 
+extern void PacketInSyncData_WriteSample(
+	Packet_t * packet, 
+	unsigned int index, 
+	const unsigned char * meas2
+); 
+
 // PacketOutRequestSyncInfo
 #define PacketOutRequestSyncInfo_ID 0x22
 #define PacketOutRequestSyncInfo_Length 0
+
+// PacketOutRequestSyncData
+#define PacketOutRequestSyncData_ID 0x23
+#define PacketOutRequestSyncData_Length 5
+#define MAX_SYNC_REQUEST_COUNT 125
+extern unsigned int PacketOutRequestSyncData_ReadStartSample(const Packet_t * packet); 
+extern unsigned char PacketOutRequestSyncData_ReadCount(const Packet_t * packet); 
 
 #endif
