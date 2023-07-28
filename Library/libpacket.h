@@ -30,12 +30,22 @@ extern void Packet_New(Packet_t * packet, unsigned char * payload, int capacity)
 #define PACKET_CONSTRUCT_SUCCESS 0
 #define PACKET_CONSTRUCT_FAIL -1
 
-#define PacketInNewSample_ID 0x20
-#define PacketInNewSample_Length 6
-extern int PacketInNewSample(
+#define PacketInNewOpticalSample_ID 0x20
+#define PacketInNewOpticalSample_Length 6
+extern int PacketInNewOpticalSample(
 	Packet_t * packet, 
 	unsigned int seconds, 
 	const unsigned char * meas2
 ); 
+
+#define PacketInNewOpticalEstimation_ID 0x21
+#define PacketInNewOpticalEstimation_Length 7
+extern int PacketInNewOpticalEstimation(
+	Packet_t * packet, 
+	unsigned char interval, 
+	unsigned int sample, 
+	const unsigned char * meas2
+); 
+
 
 #endif
