@@ -27,6 +27,6 @@ extern volatile I2C_State_TypeDef I2C_State;
 extern void I2C_HWInit(void); 
 extern int I2C_Session(void); 
 
-__weak void I2C_SessionDoneCallback(int error); 
+__weak void I2C_SessionDoneCallback(int error); // IRQ context!!
 
 #endif

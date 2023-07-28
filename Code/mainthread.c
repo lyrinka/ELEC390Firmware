@@ -58,6 +58,7 @@ void MainThread_I2CBlockingSession(void) {
 }
 
 // External weak function linkage -> libi2c.c
+// IRQ context!!
 void I2C_SessionDoneCallback(int error) {
 	MainLooper_Submit2(LWT_Dispatch2, &MainThread_LWTObject, EV_I2C_DONE); 
 }

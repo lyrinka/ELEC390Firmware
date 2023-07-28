@@ -108,6 +108,7 @@ void I2C1_IRQHandler(void) {
 	}
 }
 
+// IRQ context!!
 __weak void I2C_SessionDoneCallback(int error) {
 	return; 
 }
