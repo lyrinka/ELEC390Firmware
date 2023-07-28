@@ -523,9 +523,19 @@
               <FilePath>.\Code\mainthread.c</FilePath>
             </File>
             <File>
+              <FileName>mainthread.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Code\mainthread.h</FilePath>
+            </File>
+            <File>
               <FileName>blethread.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Code\blethread.c</FilePath>
+            </File>
+            <File>
+              <FileName>blethread.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Code\blethread.h</FilePath>
             </File>
           </Files>
         </Group>

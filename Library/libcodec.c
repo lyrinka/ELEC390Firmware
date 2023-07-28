@@ -56,7 +56,7 @@ static void crc8Accept(unsigned char * pcrc, unsigned char input) {
 	*pcrc = crc; 
 }
 
-int Packet_Encode(const Packet_t * packet, Codec_Buffer_t * buffer) {
+int Codec_Encode(const Packet_t * packet, Codec_Buffer_t * buffer) {
 	int inputPayloadLength = packet->len; 
 	
 	int outputBufferWriterIndex = 0; 
@@ -96,17 +96,17 @@ int Packet_Encode(const Packet_t * packet, Codec_Buffer_t * buffer) {
 		base93Encode(internalBuffer, internalBuffer); 
 		for(int i = 0; i < 5; i++) {
 			if(outputBufferWriterIndex >= buffer->capacity) 
-				return PACKET_ENCODE_OUTPUT_TOO_SMALL; 
+				return CODEC_ENCODE_OUTPUT_TOO_SMALL; 
 			buffer->buffer[outputBufferWriterIndex++] = internalBuffer[i]; 
 		}
 		if(endOfPacket) {
 			buffer->length = outputBufferWriterIndex; 
-			return PACKET_ENCODE_SUCCESS; 
+			return CODEC_ENCODE_SUCCESS; 
 		}
 	}
 }
 
-int Packet_Decode(const Codec_Buffer_t * buffer, Packet_t * packet) {
+int Codec_Decode(const Codec_Buffer_t * buffer, Packet_t * packet) {
 	int inputBufferReaderIndex = 0; 
 	int outputPayloadWriterIndex = -2; 
 	
@@ -118,7 +118,7 @@ int Packet_Decode(const Codec_Buffer_t * buffer, Packet_t * packet) {
 	for(;;) {
 		for(int i = 0; i < 5; i++) {
 			if(inputBufferReaderIndex >= buffer->length) 
-				return PACKET_DECODE_INPUT_TOO_SHORT; 
+				return CODEC_DECODE_INPUT_TOO_SHORT; 
 			internalBuffer[i] = buffer->buffer[inputBufferReaderIndex++]; 
 		}
 		base93Decode(internalBuffer, internalBuffer); 
@@ -133,7 +133,7 @@ int Packet_Decode(const Codec_Buffer_t * buffer, Packet_t * packet) {
 				payloadLength = data; 
 				packet->len = data; 
 				if(payloadLength >= packet->capacity) 
-					return PACKET_DECODE_OUTPUT_TOO_SMALL; 
+					return CODEC_DECODE_OUTPUT_TOO_SMALL; 
 				outputPayloadWriterIndex = 0; 
 			}
 			else if(outputPayloadWriterIndex < payloadLength) {
@@ -141,8 +141,8 @@ int Packet_Decode(const Codec_Buffer_t * buffer, Packet_t * packet) {
 			}
 			else {
 				if(data != (crc ^ 0xFF)) 
-					return PACKET_DECODE_CORRUPTED; 
-				return PACKET_DECODE_SUCCESS; 
+					return CODEC_DECODE_CORRUPTED; 
+				return CODEC_DECODE_SUCCESS; 
 			}
 			crc8Accept(&crc, data); 
 		}

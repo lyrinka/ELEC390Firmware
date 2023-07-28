@@ -1,9 +1,11 @@
 #include <stm32g071xx.h>
 
-#include "liblwt.h"
-#include "looper.h"
+#include "mainthread.h"
+#include "blethread.h"
 
 #include "libsys.h"
+
+
 
 int main(void) {
 	Sys_Init(); 
@@ -12,6 +14,9 @@ int main(void) {
 	MainLooper_Init(); 
 	
 	MainThread_Init(); 
+	BleThread_Init(); 
+	
+	MainThread_Start(); 
 	
 	MainLooper_Run(); 
 }

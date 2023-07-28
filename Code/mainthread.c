@@ -1,20 +1,28 @@
-#include "liblwt.h"
-#include "looper.h"
+#include "mainthread.h"
 
 #include "libsys.h"
 #include "libi2c.h"
 
-/* -------- LWT instantiation -------- */
-LWT_t MainThread_LWTObject; 
+#include "blethread.h"
 
+MainThread_State_t MainThread_State; 
+
+/* -------- LWT instantiation -------- */
 #define MAINTHREAD_STACK_SIZE 512
 unsigned char MainThread_Stack[MAINTHREAD_STACK_SIZE]; 
 
-void MainThread_Entry(void); 
-
 void MainThread_Init(void) {
-	LWT_New(&MainThread_LWTObject, MainThread_Stack, MAINTHREAD_STACK_SIZE, MainThread_Entry); 
-	MainLooper_Submit2(LWT_Dispatch1, &MainThread_LWTObject, 0); 
+	// Event system
+	void MainThread_EventInit(void); 
+	MainThread_EventInit(); 
+	
+	// LWT
+	void MainThread_Entry(void); 
+	LWT_New(&MainThread_State.lwt, MainThread_Stack, MAINTHREAD_STACK_SIZE, MainThread_Entry); 
+}
+
+void MainThread_Start(void) {
+	MainLooper_Submit2(LWT_Dispatch1, &MainThread_State.lwt, 0); 
 }
 
 
@@ -22,21 +30,17 @@ void MainThread_Init(void) {
 #define EV_DELAY_DONE 1
 #define EV_I2C_DONE		2
 
-volatile unsigned int MainThread_Flags; 
-
 void MainThread_EventInit(void) {
-	MainThread_Flags = 0; 
-	// Note that I2C starts as IDLE
-	MainThread_Flags |= 0x1 << (EV_I2C_DONE - 1); 
+	MainThread_State.flags = 0; 
 }
 
 void MainThread_WaitOnFlagBitmap(unsigned int bitmap) {
-	while(!(MainThread_Flags & bitmap)) {
+	while(!(MainThread_State.flags & bitmap)) {
 		int ev = LWT_Yield1(); 
 		if(ev == 0 || ev > 32) continue; 
-		MainThread_Flags |= 0x1 << (ev - 1); 
+		MainThread_State.flags |= 0x1 << (ev - 1); 
 	}
-	MainThread_Flags &= ~bitmap; 
+	MainThread_State.flags &= ~bitmap; 
 }
 
 void MainThread_WaitOnFlag(int ev) {
@@ -45,8 +49,15 @@ void MainThread_WaitOnFlag(int ev) {
 	MainThread_WaitOnFlagBitmap(bitmap); 
 }
 
+void MainThread_CooperativeYield(void) {
+	MainLooper_Submit2(LWT_Dispatch1, &MainThread_State.lwt, 0); 
+	LWT_Yield1(); 
+}
+
+
+/* -------- Time delay -------- */
 void MainThread_Delay(int tick) {
-	MainLooper_SubmitDelayed2(LWT_Dispatch2, &MainThread_LWTObject, EV_DELAY_DONE, tick); 
+	MainLooper_SubmitDelayed2(LWT_Dispatch2, &MainThread_State.lwt, EV_DELAY_DONE, tick); 
 	MainThread_WaitOnFlag(EV_DELAY_DONE); 
 }
 
@@ -60,7 +71,7 @@ void MainThread_I2CBlockingSession(void) {
 // External weak function linkage -> libi2c.c
 // IRQ context!!
 void I2C_SessionDoneCallback(int error) {
-	MainLooper_Submit2(LWT_Dispatch2, &MainThread_LWTObject, EV_I2C_DONE); 
+	MainLooper_Submit2(LWT_Dispatch2, &MainThread_State.lwt, EV_I2C_DONE); 
 }
 
 void MainThread_I2CWriteRegister1(unsigned char devaddr, unsigned char regaddr, unsigned char data) {
@@ -167,6 +178,8 @@ DAQ_OptiMeasCM_t DAQ_Compress(DAQ_OptiMeas_t meas) {
 /* -------- Testing code -------- */
 
 void MainThread_Entry(void) {
+	BleThread_Start(); 
+	MainThread_CooperativeYield(); 
 	for(;;) {
 		LED_Blue_On(); 
 		MainThread_Delay(20); 
