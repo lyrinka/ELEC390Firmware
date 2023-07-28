@@ -2,6 +2,7 @@
 
 #include "libsys.h"
 #include "libi2c.h"
+#include "liblptim.h"
 
 #include "blethread.h"
 
@@ -12,9 +13,19 @@ MainThread_State_t MainThread_State;
 unsigned char MainThread_Stack[MAINTHREAD_STACK_SIZE]; 
 
 void MainThread_Init(void) {
+	// Data structure
+	MainThread_State.minutes = 0; 
+	MainThread_State.seconds = 0; 
+	
 	// Event system
 	void MainThread_EventInit(void); 
 	MainThread_EventInit(); 
+	
+	// I2C
+	I2C_HWInit(); 
+	
+	// LPTIM
+	LPTIM_Init(); 
 	
 	// LWT
 	void MainThread_Entry(void); 
@@ -27,8 +38,9 @@ void MainThread_Start(void) {
 
 
 /* -------- Event system -------- */
-#define EV_DELAY_DONE 1
-#define EV_I2C_DONE		2
+#define EV_TIMEBASE		1
+#define EV_DELAY_DONE 2
+#define EV_I2C_DONE		3
 
 void MainThread_EventInit(void) {
 	MainThread_State.flags = 0; 
@@ -61,6 +73,17 @@ void MainThread_Delay(int tick) {
 	MainThread_WaitOnFlag(EV_DELAY_DONE); 
 }
 
+
+/* -------- Time base -------- */
+void MainThread_WaitForTimeBase(void) {
+	MainThread_WaitOnFlag(EV_TIMEBASE); 
+}
+
+// External weak function linkage -> liblptim.c
+// IRQ context!!
+void LPTIM_Callback(void) {
+	MainLooper_Submit2(LWT_Dispatch2, &MainThread_State.lwt, EV_TIMEBASE); 
+}
 
 /* -------- I2C methods -------- */
 void MainThread_I2CBlockingSession(void) {
@@ -181,10 +204,19 @@ void MainThread_Entry(void) {
 	BleThread_Start(); 
 	MainThread_CooperativeYield(); 
 	for(;;) {
+		// Wait for time base
+		MainThread_WaitForTimeBase(); 
+		
+		// Test code
 		LED_Blue_On(); 
-		MainThread_Delay(20); 
+		MainThread_Delay(100); 
 		LED_Blue_Off(); 
-		MainThread_Delay(480); 
+		
+		// Update timers
+		if(++MainThread_State.seconds >= 60) {
+			MainThread_State.seconds = 0; 
+			++MainThread_State.minutes; 
+		}
 	}
 }
 

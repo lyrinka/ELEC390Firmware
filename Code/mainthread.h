@@ -7,6 +7,8 @@
 typedef struct {
 	LWT_t lwt; 
 	volatile unsigned int flags; 
+	unsigned int minutes; 
+	unsigned char seconds; 
 } MainThread_State_t; 
 
 extern MainThread_State_t MainThread_State; 

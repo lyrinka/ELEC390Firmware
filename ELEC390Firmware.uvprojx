@@ -668,6 +668,16 @@
               <FileType>5</FileType>
               <FilePath>.\Library\libuart.h</FilePath>
             </File>
+            <File>
+              <FileName>liblptim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\liblptim.c</FilePath>
+            </File>
+            <File>
+              <FileName>liblptim.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\liblptim.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
