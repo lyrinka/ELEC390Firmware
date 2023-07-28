@@ -1,5 +1,7 @@
 #include "mainthread.h"
 
+#include "libstorage.h"
+
 #include "libsys.h"
 #include "libi2c.h"
 #include "liblptim.h"
@@ -197,8 +199,8 @@ void DAQ_PerformBatteryMeasurements(void) {
 }
 
 void DAQ_InitializeOpticalEstimations(void) {
-	DAQ_State.estIndex = 0; 
-	DAQ_State.estSample = 0; 
+	DAQ_State.estSeconds = 0; 
+	DAQ_State.estSampleNumber = 0; 
 	DAQ_State.estOptical = (DAQ_OptiMeas_t){0, 0}; 
 }
 
@@ -216,11 +218,14 @@ void DAQ_FinalizeOpticalEstimations(void) {
 	DAQ_State.estOptical = (DAQ_OptiMeas_t){0, 0}; 
 }
 
-
 void MainThread_Entry(void) {
+	Storage_Init(); 
+	
 	BleThread_Start(); 
 	MainThread_CooperativeYield(); 
+	
 	DAQ_InitializeOpticalEstimations(); 
+	
 	for(;;) {
 		// Wait for 1 second time base
 		LED_Blue_Off(); 
@@ -239,10 +244,12 @@ void MainThread_Entry(void) {
 		
 		// Perform estimations every 60 (configurable) seconds
 		DAQ_PerformOpticalEstimations(); 
-		if(++DAQ_State.estIndex >= DAQ_OPTICAL_EVAL_INTERVAL) {
-			DAQ_State.estIndex = 0; 
+		if(++DAQ_State.estSeconds >= DAQ_OPTICAL_EVAL_INTERVAL) {
+			DAQ_State.estSeconds = 0; 
 			DAQ_FinalizeOpticalEstimations(); 
-			DAQ_SubmitEstimatedOpticalMeas(DAQ_State.estOpticalCM, DAQ_State.estSample++); 
+			
+			DAQ_State.estSampleNumber = Storage_Append(&DAQ_State.estOpticalCM); 
+			DAQ_SubmitEstimatedOpticalMeas(DAQ_State.estOpticalCM, DAQ_State.estSampleNumber); 
 		}
 		
 		// Update timers

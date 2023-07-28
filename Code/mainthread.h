@@ -37,8 +37,8 @@ typedef struct {
 	DAQ_OptiMeasCM_t opticalCM; 
 	DAQ_OptiMeas_t estOptical; 
 	DAQ_OptiMeasCM_t estOpticalCM; 
-	unsigned char estIndex; 
-	unsigned int estSample; 
+	unsigned char estSeconds; 
+	unsigned int estSampleNumber; 
 } DAQ_State_t; 
 
 extern MainThread_State_t MainThread_State; 

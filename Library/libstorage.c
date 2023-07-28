@@ -1,54 +1,54 @@
 #include "libstorage.h"
 
-#include "libmutex.h"
-
 Storage_t Storage; 
 
-#define STORAGE_ARRAY_SIZE 10080 // 7 days
-LWTDAQ_CompressedMeasurement_t Storage_Array[10080]; 
-
 void Storage_Init(void) {
-	Storage.array = Storage_Array; 
-	Storage.capacity = STORAGE_ARRAY_SIZE; 
-	Storage.startMinutes = 0; 
-	Storage.currentIndex = 0; 
+	Storage.index = 0; 
+	Storage.wraps = 0; 
+	// Test code filling array
 	for(int i = 0; i < STORAGE_ARRAY_SIZE; i++) {
-		Storage_Array[i] = (LWTDAQ_CompressedMeasurement_t){
+		Storage.array[i] = (DAQ_OptiMeasCM_t){
 			0xFF, 0xFF, 
 		}; 
 	}
 }
 
-unsigned int Storage_GetPeriodStart(void) {
-	unsigned int val; 
-	critEnter(); 
-	if(Storage.startMinutes < Storage.capacity) {
-		val = Storage.startMinutes; 
-		critExit(); 
-		return val; 
+void Storage_GetRecordedRange(unsigned int * begin, unsigned int * count) {
+	if(Storage.wraps == 0) {
+		*begin = 0; 
+		*count = Storage.index; 
 	}
-	val = Storage.startMinutes + Storage.currentIndex - Storage.capacity + 1; 
-	critExit(); 
-	return val; 
-}
-
-unsigned int Storage_GetPeriodEnd(void) {
-	critEnter(); 
-	unsigned int val = Storage.startMinutes + Storage.currentIndex; 
-	critExit(); 
-	return val;
-}
-
-LWTDAQ_CompressedMeasurement_t Storage_Read(unsigned int minute) {
-	return Storage.array[minute % Storage.capacity];  
-}
-
-void Storage_Append(LWTDAQ_CompressedMeasurement_t data) {
-	critEnter(); 
-	Storage.array[Storage.currentIndex] = data; 
-	if(++Storage.currentIndex > Storage.capacity) {
-		Storage.startMinutes += Storage.capacity; 
-		Storage.currentIndex = 0; 
+	else {
+		*begin = (Storage.wraps - 1) * STORAGE_ARRAY_SIZE + Storage.index; 
+		*count = STORAGE_ARRAY_SIZE; 
 	}
-	critExit(); 
+}
+
+int Storage_Read(unsigned int sample, DAQ_OptiMeasCM_t * data) {
+	unsigned int begin, count, end; 
+	Storage_GetRecordedRange(&begin, &count); 
+	if(sample < begin) return STORAGE_READ_OUTOFBOUNDS; 
+	end = begin + count; 
+	if(sample >= end) return STORAGE_READ_OUTOFBOUNDS; 
+	unsigned int index = sample; 
+	if(Storage.wraps > 0) {
+		index -= (Storage.wraps - 1) * STORAGE_ARRAY_SIZE; 
+		if(index > STORAGE_ARRAY_SIZE) 
+			index -= STORAGE_ARRAY_SIZE; 
+	}
+	if(index >= STORAGE_ARRAY_SIZE) {
+		__nop(); 
+	}
+	*data = Storage.array[index]; 
+	return STORAGE_READ_SUCCESS; 
+}
+
+unsigned int Storage_Append(const DAQ_OptiMeasCM_t * data) {
+	Storage.array[Storage.index] = *data; 
+	if(++Storage.index >= STORAGE_ARRAY_SIZE) {
+		Storage.index = 0; 
+		Storage.wraps++; 
+	}
+	if(Storage.wraps == 0 && Storage.index == 0) return 0; 
+	return Storage.wraps * STORAGE_ARRAY_SIZE + Storage.index - 1; 
 }

@@ -1,24 +1,26 @@
 #ifndef LIBSTORAGE_H__
 #define LIBSTORAGE_H__
 
-#include "lwtdaq.h"
+#include "mainthread.h"
+
+#define STORAGE_ARRAY_SIZE 10080 // 7 days when interval is 1 minute
 
 typedef struct {
-	LWTDAQ_CompressedMeasurement_t * array; 
-	unsigned int capacity; 
-	unsigned int startMinutes; 
-	unsigned int currentIndex; 
+	unsigned int index; 
+	unsigned int wraps; 
+	DAQ_OptiMeasCM_t array[STORAGE_ARRAY_SIZE]; 
 } Storage_t; 
 
 extern Storage_t Storage; 
 
-void Storage_Init(void); 
+extern void Storage_Init(void); 
 
-extern unsigned int Storage_GetPeriodStart(void); 
-extern unsigned int Storage_GetPeriodEnd(void); 
+extern void Storage_GetRecordedRange(unsigned int * begin, unsigned int * count); 
 
-extern LWTDAQ_CompressedMeasurement_t Storage_Read(unsigned int minute); 
+#define STORAGE_READ_SUCCESS 0
+#define STORAGE_READ_OUTOFBOUNDS -1
+extern int Storage_Read(unsigned int sample, DAQ_OptiMeasCM_t * data); 
 
-extern void Storage_Append(LWTDAQ_CompressedMeasurement_t data); 
+extern unsigned int Storage_Append(const DAQ_OptiMeasCM_t * data); 
 
 #endif
