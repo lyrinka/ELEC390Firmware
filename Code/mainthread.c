@@ -194,7 +194,7 @@ void DAQ_PerformOpticalMeasurements(void) {
 }
 
 void DAQ_PerformBatteryMeasurements(void) {
-	// TODO
+	// TODO: Implement battery DAQ
 	return; 
 }
 
@@ -228,9 +228,7 @@ void MainThread_Entry(void) {
 	
 	for(;;) {
 		// Wait for 1 second time base
-		LED_Blue_Off(); 
 		MainThread_WaitForTimeBase(); 
-		LED_Blue_On(); 
 		
 		// Perform optical measurements every 1 second
 		DAQ_PerformOpticalMeasurements(); 
@@ -250,6 +248,18 @@ void MainThread_Entry(void) {
 			
 			DAQ_State.estSampleNumber = Storage_Append(&DAQ_State.estOpticalCM); 
 			DAQ_SubmitEstimatedOpticalMeas(DAQ_State.estOpticalCM, DAQ_State.estSampleNumber); 
+		}
+		
+		// Test LED handling
+		if(!(MainThread_State.seconds % 10)) {
+			if(BleThread_IsConnected()) {
+				LED_Green_On(); 
+				MainLooper_SubmitDelayed(LED_Green_Off, 20); 
+			}
+			else {
+				LED_Blue_On(); 
+				MainLooper_SubmitDelayed(LED_Blue_Off, 20); 
+			}
 		}
 		
 		// Update timers

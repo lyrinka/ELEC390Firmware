@@ -1,7 +1,5 @@
 #include <stm32g071xx.h>
 
-#define DEBUG
-
 #include "looper.h"
 
 #define MAINLOOPER_HANDLER_QUEUE_SIZE 16
@@ -42,7 +40,7 @@ void MainLooper_Run(void) {
 void MainLooper_IdlePeriod(void) {
 	__disable_irq(); 
 	if(MainLooper.handler.size == 0) {
-#ifndef DEBUG
+#ifdef USE_WFI
 		__wfi(); 
 #else
 		while(!(SCB->ICSR & SCB_ICSR_VECTPENDING_Msk)); 

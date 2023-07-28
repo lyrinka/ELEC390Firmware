@@ -4,7 +4,11 @@
 #include "liblwt.h"
 #include "looper.h"
 
+#ifdef DEMO_MODE
 #define DAQ_OPTICAL_EVAL_INTERVAL 10
+#else
+#define DAQ_OPTICAL_EVAL_INTERVAL 60
+#endif
 
 typedef struct {
 	// 16 bits, 1x
