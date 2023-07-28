@@ -12,16 +12,17 @@ typedef struct {
 // Type: Scheduler object
 typedef struct {
 	Handler_t * handler; 
-	unsigned long long currentTick; 
 	Scheduler_RunnableWrapper_t * heap; 
+	unsigned long long currentTick; 
 	unsigned int capacity; 
 	unsigned int size; 
+	unsigned int maxSizeReached; 
+	unsigned int totalOverflows; 
+	unsigned long long totalSubmit0s; 
+	unsigned long long totalSubmits; 
+	unsigned long long totalDispatches; 
+	unsigned int totalFailedDispatches; 
 } Scheduler_t; 
-
-// Object: This component has profiling data: Scheduler_Profiling
-
-// Procedure: Scheduler static initialization
-extern void Scheduler_Init(void); 
 
 // Procedure: Scheduler object construction
 extern void Scheduler_New(Scheduler_t * scheduler, Scheduler_RunnableWrapper_t * storage, unsigned int size, Handler_t * handler); 

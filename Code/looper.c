@@ -7,23 +7,14 @@
 #define MAINLOOPER_HANDLER_QUEUE_SIZE 16
 #define MAINLOOPER_SCHEDULER_HEAP_SIZE 8
 
-typedef struct {
-	unsigned long long cycles; 
-	unsigned long long sleeps; 
-} MainLooper_Profiling_t; 
-
 Looper_t MainLooper; 
-MainLooper_Profiling_t MainLooper_Profiling; 
 
 Handler_RunnableWrapper_t MainLooper_HandlerQueue[MAINLOOPER_HANDLER_QUEUE_SIZE]; 
 Scheduler_RunnableWrapper_t MainLooper_SchedulerHeap[MAINLOOPER_SCHEDULER_HEAP_SIZE]; 
 
 void MainLooper_Init(void) {
-	Handler_Init(); 
-	Scheduler_Init(); 
-	
-	MainLooper_Profiling.cycles = 0; 
-	MainLooper_Profiling.sleeps = 0; 
+	MainLooper.cycles = 0; 
+	MainLooper.sleeps = 0; 
 	
 	Handler_New(&MainLooper.handler, MainLooper_HandlerQueue, MAINLOOPER_HANDLER_QUEUE_SIZE); 
 	Scheduler_New(&MainLooper.scheduler, MainLooper_SchedulerHeap, MAINLOOPER_SCHEDULER_HEAP_SIZE, &MainLooper.handler); 
@@ -35,13 +26,14 @@ void MainLooper_Run(void) {
 	
 	SysTick_Init(); 
 	for(;;) {
-		MainLooper_Profiling.cycles++; 
+		MainLooper.cycles++; 
 		Handler_RunnableWrapper_t wrapper; 
 		int status = Handler_Fetch(&MainLooper.handler, &wrapper); 
 		if(status == HANDLER_FETCH_SUCCESS) {
 			((void(*)(void *, int))wrapper.runnable)(wrapper.context, wrapper.param); 
 		}
 		else {
+			MainLooper.sleeps++; 
 			MainLooper_IdlePeriod(); 
 		}
 	}

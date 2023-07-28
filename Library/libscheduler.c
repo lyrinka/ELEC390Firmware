@@ -6,32 +6,18 @@
 
 #define TARGET_TIME_INACTIVE 0xFFFFFFFFFFFFFFFF
 
-typedef struct {
-	unsigned long long submit0s; 
-	unsigned long long submits; 
-	unsigned long long executes; 
-	unsigned int overflows; 
-	unsigned int failedSubmits; 
-	unsigned int maxSizeReached; 
-} Scheduler_Profiling_t; 
-
-Scheduler_Profiling_t Scheduler_Profiling; 
-
-void Scheduler_Init(void) {
-	Scheduler_Profiling.submit0s = 0; 
-	Scheduler_Profiling.submits = 0; 
-	Scheduler_Profiling.executes = 0; 
-	Scheduler_Profiling.overflows = 0; 
-	Scheduler_Profiling.failedSubmits = 0; 
-	Scheduler_Profiling.maxSizeReached = 0; 
-}
-
 void Scheduler_New(Scheduler_t * scheduler, Scheduler_RunnableWrapper_t * storage, unsigned int size, Handler_t * handler) {
 	scheduler->handler = handler; 
 	scheduler->currentTick = 0; 
 	scheduler->heap = storage; 
 	scheduler->capacity = size; 
 	scheduler->size = 0; 
+	scheduler->maxSizeReached = 0; 
+	scheduler->totalOverflows = 0; 
+	scheduler->totalSubmit0s = 0; 
+	scheduler->totalSubmits = 0; 
+	scheduler->totalDispatches = 0; 
+	scheduler->totalFailedDispatches = 0; 
 	for(int i = 0; i < size; i++) 
 		storage[i].targetTick = TARGET_TIME_INACTIVE; 
 }
@@ -61,7 +47,7 @@ int Scheduler_SubmitDelayed2(Scheduler_t * scheduler, void * runnable, void * co
 int Scheduler_SubmitDelayed3(Scheduler_t * scheduler, Handler_RunnableWrapper_t runnable, unsigned int delay) {
 #ifndef ALWAYS_POST_DELAYED
 	if(delay == 0) {
-		Scheduler_Profiling.submit0s++; 
+		scheduler->totalSubmit0s++; 
 		Handler_Submit3(scheduler->handler, runnable); 
 		return SCHEDULER_SUBMIT_SUCCESS; 
 	}
@@ -77,16 +63,15 @@ int Scheduler_SubmitDelayed3(Scheduler_t * scheduler, Handler_RunnableWrapper_t 
 	}
 	if(i >= size) {
 		// TODO: how do we log overflow?
-		Scheduler_Profiling.overflows++; 
+		scheduler->totalOverflows++; 
 		critExit(); 
 		return SCHEDULER_SUBMIT_HEAP_FULL; 
 	}
-	scheduler->size++; 
-	if(scheduler->size > Scheduler_Profiling.maxSizeReached) 
-		Scheduler_Profiling.maxSizeReached = scheduler->size; 
+	if(++scheduler->size > scheduler->maxSizeReached) 
+		scheduler->maxSizeReached = scheduler->size; 
 	scheduler->heap[i].runnable = runnable; 
 	scheduler->heap[i].targetTick = scheduler->currentTick + delay; 
-	Scheduler_Profiling.submits++; 
+	scheduler->totalSubmits++; 
 	critExit(); 
 	return SCHEDULER_SUBMIT_SUCCESS; 
 }
@@ -104,12 +89,12 @@ int Scheduler_AdvanceTicks(Scheduler_t * scheduler, unsigned int amount) {
 		if(status == HANDLER_SUBMIT_SUCCESS) {
 			scheduler->heap[i].targetTick = TARGET_TIME_INACTIVE; 
 			scheduler->size--; 
-			Scheduler_Profiling.executes++; 
+			scheduler->totalDispatches++; 
 			count++; 
 		}
 		else {
 			// TODO: how do we deal with handler full problems?
-			Scheduler_Profiling.failedSubmits++; 
+			scheduler->totalFailedDispatches++; 
 		}
 	}
 	critExit(); 

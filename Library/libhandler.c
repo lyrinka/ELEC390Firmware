@@ -4,23 +4,6 @@
 
 #include "critregion.h"
 
-typedef struct {
-	unsigned long long submits; 
-	unsigned long long fetches; 
-	unsigned long long executes; 
-	unsigned int overflows; 
-	unsigned int maxSizeReached; 
-} Handler_Profiling_t; 
-
-Handler_Profiling_t Handler_Profiling; 
-
-void Handler_Init(void) {
-	Handler_Profiling.submits = 0; 
-	Handler_Profiling.fetches = 0; 
-	Handler_Profiling.executes = 0; 
-	Handler_Profiling.overflows = 0; 
-	Handler_Profiling.maxSizeReached = 0; 
-}
 
 void Handler_New(Handler_t * handler, Handler_RunnableWrapper_t * storage, unsigned int size) {
 	handler->queue = storage; 
@@ -28,6 +11,11 @@ void Handler_New(Handler_t * handler, Handler_RunnableWrapper_t * storage, unsig
 	handler->head = 0; 
 	handler->tail = 0; 
 	handler->size = 0; 
+	handler->maxSizeReached = 0; 
+	handler->totalSubmits = 0; 
+	handler->totalFetches = 0; 
+	handler->totalExecutes = 0; 
+	handler->totalOverflows = 0; 
 }
 
 int Handler_Submit1(Handler_t * handler, void * runnable) {
@@ -48,7 +36,7 @@ int Handler_Submit3(Handler_t * handler, Handler_RunnableWrapper_t wrapper) {
 	critEnter(); 
 	if(handler->size >= handler->capacity) {
 		// TODO: how do we log queue overflow?
-		Handler_Profiling.overflows++; 
+		handler->totalOverflows++; 
 		critExit(); 
 		return HANDLER_SUBMIT_QUEUE_FULL; 
 	}
@@ -56,16 +44,16 @@ int Handler_Submit3(Handler_t * handler, Handler_RunnableWrapper_t wrapper) {
 	handler->queue[head] = wrapper; 
 	if(++head >= handler->capacity) head = 0; 
 	handler->head = head; 
-	if(++handler->size > Handler_Profiling.maxSizeReached) 
-		Handler_Profiling.maxSizeReached = handler->size; 
-	Handler_Profiling.submits++; 
+	if(++handler->size > handler->maxSizeReached) 
+		handler->maxSizeReached = handler->size; 
+	handler->totalSubmits++; 
 	critExit(); 
 	return HANDLER_SUBMIT_SUCCESS; 
 }
 
 int Handler_Fetch(Handler_t * handler, Handler_RunnableWrapper_t * wrapper) {
 	critEnter(); 
-	Handler_Profiling.fetches++; 
+	handler->totalFetches++; 
 	if(handler->size == 0) {
 		critExit(); 
 		return HANDLER_FETCH_QUEUE_EMPTY; 
@@ -75,7 +63,7 @@ int Handler_Fetch(Handler_t * handler, Handler_RunnableWrapper_t * wrapper) {
 	if(++tail >= handler->capacity) tail = 0; 
 	handler->tail = tail; 
 	handler->size--; 
-	Handler_Profiling.executes++; 
+	handler->totalExecutes++; 
 	critExit(); 
 	return HANDLER_FETCH_SUCCESS; 
 }

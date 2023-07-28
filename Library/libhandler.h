@@ -15,12 +15,12 @@ typedef struct {
 	unsigned int head; 
 	unsigned int tail; 
 	unsigned int size; 
+	unsigned int maxSizeReached; 
+	unsigned int totalOverflows; 
+	unsigned long long totalSubmits; 
+	unsigned long long totalFetches; 
+	unsigned long long totalExecutes; 
 } Handler_t; 
-
-// Object: This component has profiling data: Handler_Profiling
-
-// Procedure: Handler static initialization
-extern void Handler_Init(void); 
 
 // Procedure: Handler object construction
 extern void Handler_New(Handler_t * handler, Handler_RunnableWrapper_t * storage, unsigned int size); 

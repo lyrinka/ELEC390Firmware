@@ -8,9 +8,10 @@
 typedef struct {
 	Handler_t handler; 
 	Scheduler_t scheduler; 
+	unsigned long long cycles; 
+	unsigned long long sleeps; 
 } Looper_t; 
 
-// Object: This component has profiling data: MainLooper_Profiling
 // Object: Looper object (singleton)
 extern Looper_t MainLooper; 
 
