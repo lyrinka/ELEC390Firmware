@@ -203,7 +203,8 @@ void MainThread_PerformOpticalEstimations(void) {
 void MainThread_Entry(void) {
 	BleThread_Start(); 
 	MainThread_CooperativeYield(); 
-	MainThread_State.daq.opticalHistory.counter = 0; 
+	MainThread_State.daq.opticalHistory.index = 0; 
+	MainThread_State.daq.opticalHistory.sample = 0; 
 	for(;;) {
 		// Wait for 1 second time base
 		LED_Blue_Off(); 
@@ -212,7 +213,7 @@ void MainThread_Entry(void) {
 		
 		// Perform optical measurements every 1 second
 		MainThread_PerformOpticalMeasurements(); 
-		MainThread_SubmitRTOpticalMeas(MainThread_State.daq.opticalCM); 
+		MainThread_SubmitRTOpticalMeas(MainThread_State.daq.opticalCM, MainThread_State.seconds); 
 		
 		// Perform battery measurements every 30 seconds
 		if(!(MainThread_State.seconds % 30)) {
@@ -221,11 +222,11 @@ void MainThread_Entry(void) {
 		}
 		
 		// Perform estimations every 60 (configurable) seconds
-		MainThread_State.daq.opticalHistory.history[MainThread_State.daq.opticalHistory.counter] = MainThread_State.daq.optical; 
-		if(++MainThread_State.daq.opticalHistory.counter >= DAQ_OPTICAL_EVAL_INTERVAL) {
-			MainThread_State.daq.opticalHistory.counter = 0; 
+		MainThread_State.daq.opticalHistory.history[MainThread_State.daq.opticalHistory.index] = MainThread_State.daq.optical; 
+		if(++MainThread_State.daq.opticalHistory.index >= DAQ_OPTICAL_EVAL_INTERVAL) {
+			MainThread_State.daq.opticalHistory.index = 0; 
 			MainThread_PerformOpticalEstimations(); 
-			MainThread_SubmitEstimatedOpticalMeas(MainThread_State.daq.opticalHistory.estimatedCM); 
+			MainThread_SubmitEstimatedOpticalMeas(MainThread_State.daq.opticalHistory.estimatedCM, MainThread_State.daq.opticalHistory.sample++); 
 		}
 		
 		// Update timers
@@ -233,18 +234,14 @@ void MainThread_Entry(void) {
 	}
 }
 
-__weak void MainThread_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas) {
+__weak void MainThread_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int timestamp) {
 	return; 
 }
 
 __weak void MainThread_SubmitBatteryMeas(DAQ_BattMeas_t meas) {
-	LED_Green_On(); 
-	MainLooper_SubmitDelayed1(LED_Green_Off, 200); 
 	return; 
 }
 
-__weak void MainThread_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas) {
-	LED_Red_On(); 
-	MainLooper_SubmitDelayed1(LED_Red_Off, 200); 
+__weak void MainThread_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample) {
 	return; 
 }

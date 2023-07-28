@@ -27,6 +27,8 @@ extern void BleThread_TxRawMessage(const char * string);
 extern void BleThread_TxMessage(const char * string); 
 extern void BleThread_TxPacket(const Packet_t * packet); 
 
+extern int BleThread_IsConnected(void); 
+
 // Outside of thread context
 __weak void BleThread_HandleConnectionFlow(int isConnected); 
 

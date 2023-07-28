@@ -31,13 +31,11 @@ extern void Packet_New(Packet_t * packet, unsigned char * payload, int capacity)
 #define PACKET_CONSTRUCT_FAIL -1
 
 #define PacketInNewSample_ID 0x20
-#define PacketInNewSample_Length 7
+#define PacketInNewSample_Length 6
 extern int PacketInNewSample(
 	Packet_t * packet, 
-	unsigned int min, 
-	unsigned int sec, 
-	unsigned char * meas8
+	unsigned int seconds, 
+	const unsigned char * meas2
 ); 
-
 
 #endif

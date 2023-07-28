@@ -132,7 +132,7 @@ void BleThread_TxPacket(const Packet_t * packet) {
 	int status = Codec_Encode(packet, &bufferStruct); 
 	if(status != CODEC_ENCODE_SUCCESS) return; 
 	bufferStruct.buffer[bufferStruct.length] = 0; 
-	BleThread_TxMessage("#"); 
+	BleThread_TxRawMessage("#"); 
 	BleThread_TxMessage((char *)bufferStruct.buffer); 
 }
 
@@ -209,6 +209,10 @@ void BleThread_InternalHandleMessage(const char * string, unsigned int length) {
 void BleThread_InternalHandlePacket(const Packet_t * packet) {
 	if(BleThread_State.stage != BLE_STAGE_ESTABLISHED) return; 
 	BleThread_HandlePacket(packet); 
+}
+
+int BleThread_IsConnected(void) {
+	return BleThread_State.stage == BLE_STAGE_ESTABLISHED; 
 }
 
 __weak void BleThread_HandleConnectionFlow(int isConnected) {

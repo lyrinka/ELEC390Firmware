@@ -36,7 +36,8 @@ typedef struct {
 		struct {
 			DAQ_OptiMeas_t history[DAQ_OPTICAL_EVAL_INTERVAL]; 
 			DAQ_OptiMeasCM_t estimatedCM; 
-			unsigned char counter; 
+			unsigned char index; 
+			unsigned int sample; 
 		} opticalHistory; 
 	} daq; 
 } MainThread_State_t; 
@@ -48,8 +49,8 @@ extern void MainThread_Init(void);
 extern void MainThread_Start(void); 
 
 
-__weak void MainThread_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas); 
+__weak void MainThread_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int timestamp); 
 __weak void MainThread_SubmitBatteryMeas(DAQ_BattMeas_t meas); 
-__weak void MainThread_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas); 
+__weak void MainThread_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample); 
 
 #endif

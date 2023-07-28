@@ -34,3 +34,27 @@ void BleThread_HandleConnectionFlow(int isConnected) {
 void BleThread_HandlePacket(const Packet_t * packet) {
 	return; 
 }
+
+
+void MainThread_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int second) {
+	Packet_t packet; 
+	unsigned char payload[PacketInNewSample_Length]; 
+	Packet_New(&packet, payload, PacketInNewSample_Length); 
+	PacketInNewSample(
+		&packet, 
+		second, 
+		(unsigned char *)&meas
+	); 
+	BleThread_TxPacket(&packet); 
+}
+
+void MainThread_SubmitBatteryMeas(DAQ_BattMeas_t meas) {
+	
+	
+}
+
+void MainThread_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample) {
+	
+	
+}
+
