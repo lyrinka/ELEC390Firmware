@@ -1,7 +1,10 @@
 #ifndef LIBPACKET_H__
 #define LIBPACKET_H__
 
-// Represents a packet. 
+#define PACKET_DIR_IN  1
+#define PACKET_DIR_OUT 0
+
+// Type: Packet object
 typedef struct {
 	// Direction of the packet with respect to the remote device. 
 	// Zero implies OUT packet (host to MCU), non-zero implies IN packet (MCU to host). 
@@ -13,21 +16,28 @@ typedef struct {
 	// Payload length, 0 to 255 bytes. 
 	unsigned char len; 
 	
+	// Payload capacity, 0 to 255 bytes.
+	unsigned char capacity; 
+	
 	// Pointer to allocated payload array. 
 	unsigned char * payload; 
 } Packet_t; 
 
+// Procedure: partial constructor (does not populate all elements)
+extern void Packet_New(Packet_t * packet, unsigned char * payload, int capacity); 
 
-// Packet encoder
-#define PACKET_ENCODE_SUCCESS 0
-#define PACKET_ENCODE_CONSUMER_FULL 1
-extern int Packet_Encode(const Packet_t * obj, unsigned char * buffer, unsigned int bufferLength, unsigned int * encodedLength); 
 
-// Packet decoder
-#define PACKET_DECODE_SUCCESS 0
-#define PACKET_DECODE_PRODUCER_EMPTY 1
-#define PACKET_DECODE_CORRUPTED 2
-#define PACKET_DECODE_BUFFER_TOO_SMALL 3
-extern int Packet_Decode(const unsigned char * buffer, unsigned int bufferLength, Packet_t * obj, unsigned int payloadBufferLength); 
+#define PACKET_CONSTRUCT_SUCCESS 0
+#define PACKET_CONSTRUCT_FAIL -1
+
+#define PacketInNewSample_ID 0x20
+#define PacketInNewSample_Length 7
+extern int PacketInNewSample(
+	Packet_t * packet, 
+	unsigned int min, 
+	unsigned int sec, 
+	unsigned char * meas8
+); 
+
 
 #endif
