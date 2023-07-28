@@ -36,7 +36,7 @@ void BleThread_HandlePacket(const Packet_t * packet) {
 }
 
 
-void MainThread_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int second) {
+void DAQ_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int second) {
 	if(!BleThread_IsConnected()) return; 
 	Packet_t packet; 
 	unsigned char payload[PacketInNewOpticalSample_Length]; 
@@ -49,12 +49,12 @@ void MainThread_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int second) 
 	BleThread_TxPacket(&packet); 
 }
 
-void MainThread_SubmitBatteryMeas(DAQ_BattMeas_t meas) {
+void DAQ_SubmitBatteryMeas(DAQ_BattMeas_t meas) {
 	if(!BleThread_IsConnected()) return; 
 	
 }
 
-void MainThread_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample) {
+void DAQ_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample) {
 	if(!BleThread_IsConnected()) return; 
 	Packet_t packet; 
 	unsigned char payload[PacketInNewOpticalEstimation_Length]; 

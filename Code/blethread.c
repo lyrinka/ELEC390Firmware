@@ -169,6 +169,8 @@ static int strcmprefix(const char * str1, unsigned int length, const char * str2
 }
 #define strcmpx(str) strcmprefix(string, length, str)
 
+#define BLE_CONNECTIon_GRACEPERIOD	1000
+
 #define BLE_STAGE_DISCONNECTED						0
 #define BLE_STAGE_CONNECTION_GRACEPERIOD	1
 #define BLE_STAGE_ESTABLISHED							2
@@ -194,7 +196,7 @@ void BleThread_InternalHandleMessage(const char * string, unsigned int length) {
 		BleThread_TxMessage("WAKEUPWAKEUPWAKEUPWAKEUPWAKEUP"); 
 		if(BleThread_State.stage == BLE_STAGE_DISCONNECTED) {
 			BleThread_State.stage = BLE_STAGE_CONNECTION_GRACEPERIOD; 
-			MainLooper_SubmitDelayed(BleThread_Lambda1, 500); 
+			MainLooper_SubmitDelayed(BleThread_Lambda1, BLE_CONNECTIon_GRACEPERIOD); 
 		}
 	}
 	else if(strcmpx("DISCONNECTED")) {

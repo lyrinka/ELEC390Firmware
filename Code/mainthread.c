@@ -7,6 +7,7 @@
 #include "blethread.h"
 
 MainThread_State_t MainThread_State; 
+DAQ_State_t DAQ_State; 
 
 /* -------- LWT instantiation -------- */
 #define MAINTHREAD_STACK_SIZE 512
@@ -184,27 +185,42 @@ DAQ_OptiMeasCM_t DAQ_Compress(DAQ_OptiMeas_t meas) {
 
 
 /* -------- Main thread logic -------- */
-void MainThread_PerformOpticalMeasurements(void) {
-	MainThread_State.daq.optical.uv  = LTR390_Meas_UV(); 
-	MainThread_State.daq.optical.vis = LTR390_Meas_VIS(); 
-	MainThread_State.daq.opticalCM = DAQ_Compress(MainThread_State.daq.optical); 
+void DAQ_PerformOpticalMeasurements(void) {
+	DAQ_State.optical.uv   = LTR390_Meas_UV(); 
+	DAQ_State.optical.vis = LTR390_Meas_VIS(); 
+	DAQ_State.opticalCM = DAQ_Compress(DAQ_State.optical); 
 }
 
-void MainThread_PerformBatteryMeasurements(void) {
+void DAQ_PerformBatteryMeasurements(void) {
 	// TODO
 	return; 
 }
 
-void MainThread_PerformOpticalEstimations(void) {
-	// TODO
-	return; 
+void DAQ_InitializeOpticalEstimations(void) {
+	DAQ_State.estIndex = 0; 
+	DAQ_State.estSample = 0; 
+	DAQ_State.estOptical = (DAQ_OptiMeas_t){0, 0}; 
 }
+
+
+void DAQ_PerformOpticalEstimations(void) {
+	// TODO: withstand 5 seconds of strong artificial light
+	if(DAQ_State.optical.uv > DAQ_State.estOptical.uv) 
+		DAQ_State.estOptical.uv = DAQ_State.optical.uv; 
+	if(DAQ_State.optical.vis > DAQ_State.estOptical.vis) 
+		DAQ_State.estOptical.vis = DAQ_State.optical.vis; 
+}
+
+void DAQ_FinalizeOpticalEstimations(void) {
+	DAQ_State.estOpticalCM = DAQ_Compress(DAQ_State.estOptical); 
+	DAQ_State.estOptical = (DAQ_OptiMeas_t){0, 0}; 
+}
+
 
 void MainThread_Entry(void) {
 	BleThread_Start(); 
 	MainThread_CooperativeYield(); 
-	MainThread_State.daq.opticalHistory.index = 0; 
-	MainThread_State.daq.opticalHistory.sample = 0; 
+	DAQ_InitializeOpticalEstimations(); 
 	for(;;) {
 		// Wait for 1 second time base
 		LED_Blue_Off(); 
@@ -212,21 +228,21 @@ void MainThread_Entry(void) {
 		LED_Blue_On(); 
 		
 		// Perform optical measurements every 1 second
-		MainThread_PerformOpticalMeasurements(); 
-		MainThread_SubmitRTOpticalMeas(MainThread_State.daq.opticalCM, MainThread_State.seconds); 
+		DAQ_PerformOpticalMeasurements(); 
+		DAQ_SubmitRTOpticalMeas(DAQ_State.opticalCM, MainThread_State.seconds); 
 		
 		// Perform battery measurements every 30 seconds
 		if(!(MainThread_State.seconds % 30)) {
-			MainThread_PerformBatteryMeasurements(); 
-			MainThread_SubmitBatteryMeas(MainThread_State.daq.battery); 
+			DAQ_PerformBatteryMeasurements(); 
+			DAQ_SubmitBatteryMeas(DAQ_State.battery); 
 		}
 		
 		// Perform estimations every 60 (configurable) seconds
-		MainThread_State.daq.opticalHistory.history[MainThread_State.daq.opticalHistory.index] = MainThread_State.daq.optical; 
-		if(++MainThread_State.daq.opticalHistory.index >= DAQ_OPTICAL_EVAL_INTERVAL) {
-			MainThread_State.daq.opticalHistory.index = 0; 
-			MainThread_PerformOpticalEstimations(); 
-			MainThread_SubmitEstimatedOpticalMeas(MainThread_State.daq.opticalHistory.estimatedCM, MainThread_State.daq.opticalHistory.sample++); 
+		DAQ_PerformOpticalEstimations(); 
+		if(++DAQ_State.estIndex >= DAQ_OPTICAL_EVAL_INTERVAL) {
+			DAQ_State.estIndex = 0; 
+			DAQ_FinalizeOpticalEstimations(); 
+			DAQ_SubmitEstimatedOpticalMeas(DAQ_State.estOpticalCM, DAQ_State.estSample++); 
 		}
 		
 		// Update timers
@@ -234,14 +250,14 @@ void MainThread_Entry(void) {
 	}
 }
 
-__weak void MainThread_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int timestamp) {
+__weak void DAQ_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int timestamp) {
 	return; 
 }
 
-__weak void MainThread_SubmitBatteryMeas(DAQ_BattMeas_t meas) {
+__weak void DAQ_SubmitBatteryMeas(DAQ_BattMeas_t meas) {
 	return; 
 }
 
-__weak void MainThread_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample) {
+__weak void DAQ_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample) {
 	return; 
 }

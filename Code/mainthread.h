@@ -4,7 +4,7 @@
 #include "liblwt.h"
 #include "looper.h"
 
-#define DAQ_OPTICAL_EVAL_INTERVAL 60
+#define DAQ_OPTICAL_EVAL_INTERVAL 10
 
 typedef struct {
 	// 16 bits, 1x
@@ -29,28 +29,28 @@ typedef struct {
 	LWT_t lwt; 
 	volatile unsigned int flags; 
 	unsigned int seconds; 
-	struct {
-		DAQ_OptiMeas_t optical; 
-		DAQ_OptiMeasCM_t opticalCM; 
-		DAQ_BattMeas_t battery; 
-		struct {
-			DAQ_OptiMeas_t history[DAQ_OPTICAL_EVAL_INTERVAL]; 
-			DAQ_OptiMeasCM_t estimatedCM; 
-			unsigned char index; 
-			unsigned int sample; 
-		} opticalHistory; 
-	} daq; 
 } MainThread_State_t; 
 
+typedef struct {
+	DAQ_BattMeas_t battery; 
+	DAQ_OptiMeas_t optical; 
+	DAQ_OptiMeasCM_t opticalCM; 
+	DAQ_OptiMeas_t estOptical; 
+	DAQ_OptiMeasCM_t estOpticalCM; 
+	unsigned char estIndex; 
+	unsigned int estSample; 
+} DAQ_State_t; 
+
 extern MainThread_State_t MainThread_State; 
+extern DAQ_State_t DAQ_State; 
 
 extern void MainThread_Init(void); 
 
 extern void MainThread_Start(void); 
 
 
-__weak void MainThread_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int timestamp); 
-__weak void MainThread_SubmitBatteryMeas(DAQ_BattMeas_t meas); 
-__weak void MainThread_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample); 
+__weak void DAQ_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int timestamp); 
+__weak void DAQ_SubmitBatteryMeas(DAQ_BattMeas_t meas); 
+__weak void DAQ_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample); 
 
 #endif
