@@ -45,14 +45,16 @@ int Scheduler_SubmitDelayed2(Scheduler_t * scheduler, void * runnable, void * co
 }
 
 int Scheduler_SubmitDelayed3(Scheduler_t * scheduler, Handler_RunnableWrapper_t runnable, unsigned int delay) {
+	critEnter(); 
 #ifndef ALWAYS_POST_DELAYED
 	if(delay == 0) {
-		scheduler->totalSubmit0s++; 
 		Handler_Submit3(scheduler->handler, runnable); 
+		scheduler->totalSubmit0s++; 
+		scheduler->totalSubmits++; 
+		critExit(); 
 		return SCHEDULER_SUBMIT_SUCCESS; 
 	}
 #endif
-	critEnter(); 
 	// TODO: implement this with minheap
 	// Find vacant slot
 	int i = 0; 

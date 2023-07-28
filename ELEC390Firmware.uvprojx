@@ -760,6 +760,11 @@
           <GroupName>Util</GroupName>
           <Files>
             <File>
+              <FileName>critregion.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\critregion.h</FilePath>
+            </File>
+            <File>
               <FileName>libstream.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Library\libstream.c</FilePath>
@@ -829,11 +834,6 @@
               <FileName>libstorage.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Library\libstorage.h</FilePath>
-            </File>
-            <File>
-              <FileName>critregion.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Library\critregion.h</FilePath>
             </File>
           </Files>
         </Group>

@@ -16,6 +16,10 @@ void BleThread_Init(void) {
 	void BleThread_SerialInit(void); 
 	BleThread_SerialInit(); 
 	
+	// Application FSM
+	void BleThread_ConnectionFlowInit(void); 
+	BleThread_ConnectionFlowInit(); 
+	
 	// LWT
 	void BleThread_Entry(void); 
 	LWT_New(&BleThread_State.lwt, BleThread_Stack, BLETHREAD_STACK_SIZE, BleThread_Entry); 
@@ -81,7 +85,7 @@ int BleThread_ReadLine(unsigned char * buffer, unsigned int capacity) {
 				i--; 
 				continue; 
 			}
-			return i + 1; 
+			return i; 
 		}
 		while(!isPrintable(getch())); 
 	}
@@ -99,44 +103,118 @@ int BleThread_ParsePacket(unsigned char * buffer, unsigned int length, Packet_t 
 }
 
 
-/* -------- Testing code -------- */
+/* -------- Thread body -------- */
 // Line buffer is used during line parsing, message rx/tx, rx packet payload & encodings, and tx packet encodings. 
 // Line buffer shall not be used to store tx packet payload.
 #define BLETHREAD_LINEBUFFER_SIZE 350
-unsigned char BleThread_LineBuffer[BLETHREAD_LINEBUFFER_SIZE]; 
+unsigned char BleThread_RxLineBuffer[BLETHREAD_LINEBUFFER_SIZE]; 
+unsigned char BleThread_TxLineBuffer[BLETHREAD_LINEBUFFER_SIZE]; 
+
+void BleThread_TxRawMessage(const char * string) {
+	for(int i = 0;; i++) {
+		char ch = string[i]; 
+		if(!ch) break; 
+		int status = Stream_Write(&BleThread_State.streams.tx, ch); 
+		UART_TriggerTx(); 
+		if(status != STREAM_WRITE_SUCCESS) break;
+	}
+}
+
+void BleThread_TxMessage(const char * string) {
+	BleThread_TxRawMessage(string); 
+	BleThread_TxRawMessage("\r\n"); 
+}
+
+void BleThread_TxPacket(const Packet_t * packet) {
+	Codec_Buffer_t bufferStruct; 
+	bufferStruct.capacity = BLETHREAD_LINEBUFFER_SIZE - 1; 
+	bufferStruct.buffer = BleThread_TxLineBuffer; 
+	int status = Codec_Encode(packet, &bufferStruct); 
+	if(status != CODEC_ENCODE_SUCCESS) return; 
+	bufferStruct.buffer[bufferStruct.length] = 0; 
+	BleThread_TxMessage("#"); 
+	BleThread_TxMessage((char *)bufferStruct.buffer); 
+}
 
 void BleThread_Entry(void) {
-	void BleThread_HandleMessage(const char * string, unsigned int length); 
-	void BleThread_HandlePacket(const Packet_t * packet); 
+	void BleThread_InternalHandleMessage(const char * string, unsigned int length); 
+	void BleThread_InternalHandlePacket(const Packet_t * packet); 
 	
 	Packet_t packet; 
 	packet.capacity = BLETHREAD_LINEBUFFER_SIZE > 255 ? 255 : BLETHREAD_LINEBUFFER_SIZE; 
-	packet.payload = BleThread_LineBuffer; 
+	packet.payload = BleThread_RxLineBuffer; 
 	for(;;) {
-		int length = BleThread_ReadLine(BleThread_LineBuffer, BLETHREAD_LINEBUFFER_SIZE); 
-		int status = BleThread_ParsePacket(BleThread_LineBuffer, length, &packet); 
+		int length = BleThread_ReadLine(BleThread_RxLineBuffer, BLETHREAD_LINEBUFFER_SIZE); 
+		int status = BleThread_ParsePacket(BleThread_RxLineBuffer, length, &packet); 
 		if(status) {
-			BleThread_HandleMessage((const char *)BleThread_LineBuffer, length); 
+			BleThread_InternalHandleMessage((const char *)BleThread_RxLineBuffer, length); 
 		}
 		else {
-			BleThread_HandlePacket(&packet); 
+			BleThread_InternalHandlePacket(&packet); 
 		}
 	}
 }
 
-void BleThread_HandleMessage(const char * string, unsigned int length) {
-	
-	__nop(); 
+/* -------- Connection handling -------- */
+static int strcmprefix(const char * str1, unsigned int length, const char * str2) {
+	for(int i = 0; i < 32; i++) {
+		if(i >= length) return 1; 
+		char ch1 = str1[i]; 
+		char ch2 = str2[i]; 
+		if(ch1 == 0) return 0; 
+		if(ch2 == 0) return 1; 
+		if(ch1 != ch2) return 0; 
+	}
+	return 1; // max length reached
+}
+#define strcmpx(str) strcmprefix(string, length, str)
+
+#define BLE_STAGE_DISCONNECTED						0
+#define BLE_STAGE_CONNECTION_GRACEPERIOD	1
+#define BLE_STAGE_ESTABLISHED							2
+
+void BleThread_ConnectionFlowInit(void) {
+	BleThread_State.stage = BLE_STAGE_DISCONNECTED; 
 }
 
-void BleThread_HandlePacket(const Packet_t * packet) {
-	
-	__nop(); 
+// Outside of thread context
+void BleThread_Lambda1(void) {
+	if(BleThread_State.stage != BLE_STAGE_CONNECTION_GRACEPERIOD) return; 
+	BleThread_State.stage = BLE_STAGE_ESTABLISHED; 
+	BleThread_HandleConnectionFlow(1); 
 }
 
+// Outside of thread context
+void BleThread_Lambda2(void) {
+	BleThread_HandleConnectionFlow(0); 
+}
 
+void BleThread_InternalHandleMessage(const char * string, unsigned int length) {
+	if(strcmpx("CONNECTED")) {
+		BleThread_TxMessage("WAKEUPWAKEUPWAKEUPWAKEUPWAKEUP"); 
+		if(BleThread_State.stage == BLE_STAGE_DISCONNECTED) {
+			BleThread_State.stage = BLE_STAGE_CONNECTION_GRACEPERIOD; 
+			MainLooper_SubmitDelayed(BleThread_Lambda1, 500); 
+		}
+	}
+	else if(strcmpx("DISCONNECTED")) {
+		BleThread_TxMessage("+++AT+SLEEP=0,1,1"); 
+		if(BleThread_State.stage == BLE_STAGE_ESTABLISHED) {
+			MainLooper_Submit(BleThread_Lambda2); 
+		}
+		BleThread_State.stage = BLE_STAGE_DISCONNECTED; 
+	}
+}
 
+void BleThread_InternalHandlePacket(const Packet_t * packet) {
+	if(BleThread_State.stage != BLE_STAGE_ESTABLISHED) return; 
+	BleThread_HandlePacket(packet); 
+}
 
+__weak void BleThread_HandleConnectionFlow(int isConnected) {
+	return; 
+}
 
-
-
+__weak void BleThread_HandlePacket(const Packet_t * packet) {
+	return; 
+}
