@@ -23,9 +23,9 @@ void UART_Init(void) {
 	RCC->APBRSTR1 &= ~RCC_APBRSTR1_USART2RST; 
 	__DSB(); 
 	
-	// Set USART2 at 9600 baud, enable Rx IRQ, disable Tx IRQ
-	USART2->BRR = 104; 
-	USART2->CR1 = 0x2D; 
+	// Set USART2 at 57600 baud, enable Rx IRQ, disable Tx IRQ
+	USART2->BRR = 17; 
+	USART2->CR1 = 0x2000002D; 
 	
 	// Enable USART2 IRQ, priority 2
 	NVIC_EnableIRQ(USART2_IRQn); 
@@ -40,33 +40,38 @@ __weak int UART_TxEmptyHandler(unsigned char * data) { // IRQ context!!
 	return UART_TXHANDLER_NODATA; 
 }
 
-__weak void UART_RxFullHandler(unsigned char data, int overrun) { // IRQ context!!
+__weak void UART_RxFullHandler(unsigned char data) { // IRQ context!!
 	return; 
 }
 
 void USART2_IRQHandler(void) {
 	unsigned int flags = USART2->ISR; 
 	if((flags & USART_ISR_TXE_TXFNF) & (USART2->CR1 & USART_CR1_TXEIE_TXFNFIE)) {
-		unsigned char data; 
-		int status = UART_TxEmptyHandler(&data); 
-		if(status == UART_TXHANDLER_SUCCESS) {
-			USART2->TDR = data; 
-			UART_Profiling.tx++; 
-		}
-		else {
-			USART2->CR1 &= ~USART_CR1_TXEIE_TXFNFIE; 
+		for(;;) {
+			unsigned char data; 
+			int status = UART_TxEmptyHandler(&data); 
+			if(status == UART_TXHANDLER_SUCCESS) {
+				USART2->TDR = data; 
+				UART_Profiling.tx++; 
+			}
+			else {
+				USART2->CR1 &= ~USART_CR1_TXEIE_TXFNFIE; 
+				break; 
+			}
+			if(!(USART2->ISR & USART_ISR_TXE_TXFNF)) break; 
 		}
 	}
 	if(flags & USART_ISR_RXNE_RXFNE) {
-		UART_Profiling.rx++; 
-		unsigned char data = USART2->RDR; 
-		int overrun = 0; 
-		if(flags & USART_ISR_ORE) {
-			// TODO: how do we deal with overruns?
-			overrun = 1; 
-			UART_Profiling.overruns++; 
-			USART2->ICR = USART_ICR_ORECF; 
+		for(;;) {
+			UART_Profiling.rx++; 
+			unsigned char data = USART2->RDR; 
+			UART_RxFullHandler(data); 
+			if(!(USART2->ISR & USART_ISR_RXNE_RXFNE)) break; 
 		}
-		UART_RxFullHandler(data, overrun); 
+	}
+	if(flags & USART_ISR_ORE) {
+		// TODO: how do we deal with overruns?
+		UART_Profiling.overruns++; 
+		USART2->ICR = USART_ICR_ORECF; 
 	}
 }

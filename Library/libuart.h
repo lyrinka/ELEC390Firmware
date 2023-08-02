@@ -18,6 +18,6 @@ extern void UART_TriggerTx(void);
 #define UART_TXHANDLER_SUCCESS 0
 #define UART_TXHANDLER_NODATA -1
 __weak int UART_TxEmptyHandler(unsigned char * data);  // IRQ context!!
-__weak void UART_RxFullHandler(unsigned char data, int overrun); // IRQ context!!
+__weak void UART_RxFullHandler(unsigned char data); // IRQ context!!
 
 #endif

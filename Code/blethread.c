@@ -60,7 +60,7 @@ void BleThread_SerialInit(void) {
 
 // External weak function linkage -> libuart.c
 // IRQ context!!
-void UART_RxFullHandler(unsigned char data, int overrun) {
+void UART_RxFullHandler(unsigned char data) {
 	Stream_Write(&BleThread_State.streams.rx, data); 
 	MainLooper_Submit2(LWT_Dispatch1, &BleThread_State.lwt, 0); 
 }
@@ -79,9 +79,12 @@ int UART_TxEmptyHandler(unsigned char * data) {
 #define getch() BleThread_BlockingReadBytes()
 #define isPrintable(ch) ((ch) >= ' ' && (ch) <= '~')
 int BleThread_ReadLine(unsigned char * buffer, unsigned int capacity) {
+	unsigned char ch; 
+	char loaded = 0; 
 	for(;;) {
 		for(int i = 0; i < capacity; i++) {
-			unsigned char ch = getch(); 
+			if(!loaded) ch = getch(); 
+			else loaded = 0; 
 			if(isPrintable(ch)) {
 				buffer[i] = ch; 
 				continue; 
@@ -92,7 +95,11 @@ int BleThread_ReadLine(unsigned char * buffer, unsigned int capacity) {
 			}
 			return i; 
 		}
-		while(!isPrintable(getch())); 
+		for(;;) {
+			ch = getch(); 
+			if(isPrintable(ch)) break; 
+		}
+		loaded = 1; 
 	}
 }
 
@@ -209,7 +216,8 @@ void BleThread_InternalHandleMessage(char * string, unsigned int length) {
 		}
 	}
 	else if(strcmpx("DISCONNECTED")) {
-		BleThread_TxMessage("+++AT+SLEEP=0,1,1"); 
+		BleThread_TxRawMessage("+++"); 
+		MainLooper_SubmitDelayed2(BleThread_TxMessage, "AT+SLEEP=0,1,1", 0, 60); 
 		if(BleThread_State.stage == BLE_STAGE_ESTABLISHED) {
 			MainLooper_Submit(BleThread_Lambda2); 
 		}

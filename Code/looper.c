@@ -2,7 +2,7 @@
 
 #include "looper.h"
 
-#define MAINLOOPER_HANDLER_QUEUE_SIZE 16
+#define MAINLOOPER_HANDLER_QUEUE_SIZE 64
 #define MAINLOOPER_SCHEDULER_HEAP_SIZE 8
 
 Looper_t MainLooper; 
