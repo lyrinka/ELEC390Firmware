@@ -505,6 +505,16 @@
               <FileType>5</FileType>
               <FilePath>.\Library\liblptim.h</FilePath>
             </File>
+            <File>
+              <FileName>libadc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Library\libadc.c</FilePath>
+            </File>
+            <File>
+              <FileName>libadc.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Library\libadc.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

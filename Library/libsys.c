@@ -42,8 +42,8 @@ void Sys_Init(void) {
 	// Battery:
 	//	PB13: Input Pull-up
 	//	PB14: Input Pull-up
-//GPIOB->MODER = GPIOB->MODER & 0xC3FFFFFF; 
-//GPIOB->PUPDR = GPIOB->PUPDR & 0xC3FFFFFF | 0x14000000; 
+	GPIOB->MODER = GPIOB->MODER & 0xC3FFFFFF; 
+	GPIOB->PUPDR = GPIOB->PUPDR & 0xC3FFFFFF | 0x14000000; 
 	
 	// Sensor VDD:
 	//	PB9: Output Push-pull, Max speed
@@ -96,6 +96,14 @@ void Sys_BluetoothOn(void) {
 
 void Sys_BluetoothOff(void) {
 	GPIOF->BRR = 0x0003; 
+}
+
+int Sys_IsCharging(void) {
+	return !(GPIOB->IDR & 0x2000); 
+}
+
+int Sys_IsChargingDone(void) {
+	return !(GPIOB->IDR & 0x4000); 
 }
 
 void LED_Red_On(void) {

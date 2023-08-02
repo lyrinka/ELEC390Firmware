@@ -24,9 +24,14 @@ typedef struct {
 	unsigned char uv; 
 } DAQ_OptiMeasCM_t; 
 
+#define BATT_DISCHARGING 0
+#define BATT_CHARGING 1
+#define BATT_CHARGING_DONE 2
 typedef struct {
-	unsigned char voltage; 
+	unsigned short unfilteredVoltage; 
+	unsigned short voltage; 
 	unsigned char percentage; 
+	unsigned char state; 
 } DAQ_BattMeas_t; 
 
 typedef struct {

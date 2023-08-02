@@ -5,6 +5,7 @@
 #include "libsys.h"
 #include "libi2c.h"
 #include "liblptim.h"
+#include "libadc.h"
 
 #include "blethread.h"
 
@@ -193,9 +194,37 @@ void DAQ_PerformOpticalMeasurements(void) {
 	DAQ_State.opticalCM = DAQ_Compress(DAQ_State.optical); 
 }
 
-void DAQ_PerformBatteryMeasurements(void) {
-	// TODO: Implement battery DAQ
-	return; 
+int DAQ_PerformBatteryMeasurements(void) {
+	// Charging status
+	char update = 0; 
+	unsigned char prevState = DAQ_State.battery.state; 
+	if(Sys_IsCharging()) {
+		DAQ_State.battery.state = BATT_CHARGING; 
+	}
+	else if(Sys_IsChargingDone()) {
+		DAQ_State.battery.state = BATT_CHARGING_DONE; 
+	}
+	else {
+		DAQ_State.battery.state = BATT_DISCHARGING; 
+	}
+	if(DAQ_State.battery.state != prevState) update = 1; 
+	
+	// Battery voltage
+	ADC_PowerOn(); 
+	MainThread_Delay(10); 
+	ADC_Convert(); 
+	MainThread_Delay(10); 
+	unsigned int mv = ADC_Cleanup(); 
+	DAQ_State.battery.unfilteredVoltage = mv; 
+	if(DAQ_State.battery.voltage == 0) 
+		DAQ_State.battery.voltage = mv; 
+	else
+		DAQ_State.battery.voltage = (((unsigned int)DAQ_State.battery.voltage * 768) + mv * 256) >> 10; 
+	
+	// Battery percentage
+	DAQ_State.battery.percentage = 1; 
+	
+	return update; 
 }
 
 void DAQ_InitializeOpticalEstimations(void) {
@@ -234,12 +263,6 @@ void MainThread_Entry(void) {
 		DAQ_PerformOpticalMeasurements(); 
 		DAQ_SubmitRTOpticalMeas(DAQ_State.opticalCM, MainThread_State.seconds); 
 		
-		// Perform battery measurements every 30 seconds
-		if(!(MainThread_State.seconds % 30)) {
-			DAQ_PerformBatteryMeasurements(); 
-			DAQ_SubmitBatteryMeas(DAQ_State.battery); 
-		}
-		
 		// Perform estimations every 60 (configurable) seconds
 		DAQ_PerformOpticalEstimations(); 
 		if(++DAQ_State.estSeconds >= DAQ_OPTICAL_EVAL_INTERVAL) {
@@ -248,6 +271,12 @@ void MainThread_Entry(void) {
 			
 			DAQ_State.estSampleNumber = Storage_Append(&DAQ_State.estOpticalCM); 
 			DAQ_SubmitEstimatedOpticalMeas(DAQ_State.estOpticalCM, DAQ_State.estSampleNumber); 
+		}
+		
+		// Perform battery measurements every second, report every 30 seconds
+		int forceUpdateBatt = DAQ_PerformBatteryMeasurements(); 
+		if(!(MainThread_State.seconds % 30) || forceUpdateBatt) {
+			DAQ_SubmitBatteryMeas(DAQ_State.battery); 
 		}
 		
 		// Test LED handling
