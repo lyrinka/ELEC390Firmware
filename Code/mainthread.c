@@ -220,7 +220,7 @@ int DAQ_PerformBatteryMeasurements(void) {
 			g_connected = 2; 
 			break; 
 		case 2: 
-			if(!BleThread_IsConnected) g_connected = 0;
+			if(!BleThread_IsConnected()) g_connected = 0;
 			break; 
 	}
 	
@@ -238,7 +238,7 @@ int DAQ_PerformBatteryMeasurements(void) {
 	// Battery percentage
 	// 4.20V corresponds to 100%
 	// 3.30V corresponds to 0% (or 1%)
-	// TODO: use a proper algorithm
+	// TODO: use a proper battery SOC algorithm
 	int percentage = (mv - 3300) / 9; 
 	if(percentage <= 0) percentage = 1; 
 	if(percentage > 100) percentage = 100; 

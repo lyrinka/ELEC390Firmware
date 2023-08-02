@@ -3,11 +3,9 @@
 
 #include "mainthread.h"
 
-#ifndef DEMO_MODE
-#define STORAGE_ARRAY_SIZE 10080 // 7 days when interval is 1 minute
-#else
-#define STORAGE_ARRAY_SIZE 14400 // 1 day when interval is 10 seconds
-#endif
+// 1.67 days when interval is 10 seconds (demo)
+// 10 days when interval is 60 seconds
+#define STORAGE_ARRAY_SIZE 14400 
 
 typedef struct {
 	unsigned int index; 
