@@ -1,10 +1,26 @@
 #include "libpacket.h"
 
-
-extern void Packet_New(Packet_t * packet, unsigned char * payload, int capacity) {
+void Packet_New(Packet_t * packet, unsigned char * payload, int capacity) {
 	if(capacity > 255) capacity = 255; 
 	packet->capacity = capacity; 
 	packet->payload = payload; 
+}
+
+int PacketInBatteryInfo(
+	Packet_t * packet, 
+	unsigned short voltage, 
+	unsigned char percentage, 
+	unsigned char state
+) {
+	if(packet->capacity < PacketInBatteryInfo_Length) return PACKET_CONSTRUCT_FAIL; 
+	packet->dir = PACKET_DIR_IN; 
+	packet->pid = PacketInBatteryInfo_ID; 
+	packet->len = PacketInBatteryInfo_Length; 
+	packet->payload[0] = voltage >> 8; 
+	packet->payload[1] = voltage; 
+	packet->payload[2] = percentage;  
+	packet->payload[3] = state; 
+	return PACKET_CONSTRUCT_SUCCESS; 
 }
 
 int PacketInNewOpticalSample(

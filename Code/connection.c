@@ -20,7 +20,16 @@ void BleThread_HandleConnectionFlow(int isConnected) {
 // In MainThread LWT context
 void DAQ_SubmitBatteryMeas(DAQ_BattMeas_t meas) {
 	if(!BleThread_IsConnected()) return; 
-	// TODO: implement battery measurements
+	Packet_t packet; 
+	unsigned char payload[PacketInBatteryInfo_Length]; 
+	Packet_New(&packet, payload, PacketInBatteryInfo_Length); 
+	PacketInBatteryInfo(
+		&packet, 
+		meas.voltage, 
+		meas.percentage, 
+		meas.state
+	); 
+	BleThread_TxPacket(&packet); 
 }
 
 // In MainThread LWT context

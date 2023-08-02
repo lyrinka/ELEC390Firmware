@@ -30,6 +30,16 @@ extern void Packet_New(Packet_t * packet, unsigned char * payload, int capacity)
 #define PACKET_CONSTRUCT_SUCCESS 0
 #define PACKET_CONSTRUCT_FAIL -1
 
+// PacketInBatteryInfo
+#define PacketInBatteryInfo_ID 0x0F
+#define PacketInBatteryInfo_Length 4
+extern int PacketInBatteryInfo(
+	Packet_t * packet, 
+	unsigned short voltage, 
+	unsigned char percentage, 
+	unsigned char state
+); 
+
 // PacketInNewOpticalSample
 #define PacketInNewOpticalSample_ID 0x20
 #define PacketInNewOpticalSample_Length 6
