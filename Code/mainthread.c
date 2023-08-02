@@ -195,6 +195,7 @@ void DAQ_PerformOpticalMeasurements(void) {
 }
 
 int DAQ_PerformBatteryMeasurements(void) {
+	static unsigned char g_connected = 0; 
 	// Charging status
 	char update = 0; 
 	unsigned char prevState = DAQ_State.battery.state; 
@@ -209,6 +210,20 @@ int DAQ_PerformBatteryMeasurements(void) {
 	}
 	if(DAQ_State.battery.state != prevState) update = 1; 
 	
+	// Force update when connection state changes
+	switch(g_connected) {
+		default: 
+			if(BleThread_IsConnected()) g_connected = 1; 
+			break; 
+		case 1:
+			update = 1; 
+			g_connected = 2; 
+			break; 
+		case 2: 
+			if(!BleThread_IsConnected) g_connected = 0;
+			break; 
+	}
+	
 	// Battery voltage
 	ADC_PowerOn(); 
 	MainThread_Delay(10); 
@@ -216,13 +231,18 @@ int DAQ_PerformBatteryMeasurements(void) {
 	MainThread_Delay(10); 
 	unsigned int mv = ADC_Cleanup(); 
 	DAQ_State.battery.unfilteredVoltage = mv; 
-	if(DAQ_State.battery.voltage == 0) 
-		DAQ_State.battery.voltage = mv; 
-	else
-		DAQ_State.battery.voltage = (((unsigned int)DAQ_State.battery.voltage * 768) + mv * 256) >> 10; 
+	if(DAQ_State.battery.voltage != 0) 
+		mv = (((unsigned int)DAQ_State.battery.voltage * 768) + mv * 256) >> 10; 
+	DAQ_State.battery.voltage = mv; 
 	
 	// Battery percentage
-	DAQ_State.battery.percentage = 1; 
+	// 4.20V corresponds to 100%
+	// 3.30V corresponds to 0% (or 1%)
+	// TODO: use a proper algorithm
+	int percentage = (mv - 3300) / 9; 
+	if(percentage <= 0) percentage = 1; 
+	if(percentage > 100) percentage = 100; 
+	DAQ_State.battery.percentage = percentage; 
 	
 	return update; 
 }
