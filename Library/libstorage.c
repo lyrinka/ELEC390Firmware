@@ -5,12 +5,6 @@ Storage_t Storage;
 void Storage_Init(void) {
 	Storage.index = 0; 
 	Storage.wraps = 0; 
-	// Test code filling array
-	for(int i = 0; i < STORAGE_ARRAY_SIZE; i++) {
-		Storage.array[i] = (DAQ_OptiMeasCM_t){
-			0xFF, 0xFF, 
-		}; 
-	}
 }
 
 void Storage_GetRecordedRange(unsigned int * begin, unsigned int * count) {

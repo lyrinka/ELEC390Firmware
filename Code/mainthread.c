@@ -221,17 +221,6 @@ void DAQ_FinalizeOpticalEstimations(void) {
 void MainThread_Entry(void) {
 	Storage_Init(); 
 	
-	// Inject test data
-	{
-		DAQ_OptiMeas_t meas; 
-		meas.uv = 123; 
-		meas.vis = 456; 
-		DAQ_OptiMeasCM_t meas2 = DAQ_Compress(meas); 
-		for(int i = 0; i < 18000; i++) {
-			Storage_Append(&meas2); 
-		}
-	}
-	
 	BleThread_Start(); 
 	MainThread_CooperativeYield(); 
 	
