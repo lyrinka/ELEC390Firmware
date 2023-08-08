@@ -16,13 +16,28 @@ int main(void) {
 	// Application code
 	Sys_Init(); 
 	
+	// LSE timeout handling
+	int lseTimeoutCounter = 0; 
+	int useAlternateTimebase = 0; 
+	LED_Red_On(); 
+	while(!Sys_LSEReady()) {
+		lseTimeoutCounter++; 
+		if(lseTimeoutCounter > 100000) {
+			useAlternateTimebase = 1; 
+			break; 
+		}
+	}
+	LED_Red_Off(); 
+	
+	// System initialization
 	LWT_Init(); 
 	MainLooper_Init(); 
 	
-	MainThread_Init(); 
+	MainThread_Init(useAlternateTimebase); 
 	BleThread_Init(); 
 	
 	MainThread_Start(); 
 	
+	// System boot
 	MainLooper_Run(); 
 }

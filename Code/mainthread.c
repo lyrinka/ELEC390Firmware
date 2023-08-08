@@ -16,7 +16,7 @@ DAQ_State_t DAQ_State;
 #define MAINTHREAD_STACK_SIZE 512
 unsigned char MainThread_Stack[MAINTHREAD_STACK_SIZE]; 
 
-void MainThread_Init(void) {
+void MainThread_Init(int useAlternateTimebase) {
 	// Data structure
 	MainThread_State.seconds = 0; 
 	
@@ -27,8 +27,14 @@ void MainThread_Init(void) {
 	// I2C
 	I2C_HWInit(); 
 	
-	// LPTIM
-	LPTIM_Init(); 
+	// Timebase (LPTIM)
+	if(!useAlternateTimebase) LPTIM_Init(); 
+	else {
+		void MainThread_AlternateTimebase(void); 
+		MainLooper_SubmitDelayed(MainThread_AlternateTimebase, 1000); 
+		LED_Red_On(); 
+		MainLooper_SubmitDelayed(LED_Red_Off, 5000); 
+	}
 	
 	// LWT
 	void MainThread_Entry(void); 
@@ -86,6 +92,11 @@ void MainThread_WaitForTimeBase(void) {
 // IRQ context!!
 void LPTIM_Callback(void) {
 	MainLooper_Submit2(LWT_Dispatch2, &MainThread_State.lwt, EV_TIMEBASE); 
+}
+
+void MainThread_AlternateTimebase(void) {
+	LPTIM_Callback(); 
+	MainLooper_SubmitDelayed(MainThread_AlternateTimebase, 1000); 
 }
 
 /* -------- I2C methods -------- */

@@ -21,6 +21,11 @@ void Sys_Init(void) {
 	
 	// LSE ON
 	PWR->CR1 |= PWR_CR1_DBP; 
+	__DSB(); 
+	RCC->BDCR |= RCC_BDCR_BDRST; 
+	__DSB(); 
+	RCC->BDCR &=~RCC_BDCR_BDRST; 
+	__DSB(); 
 	RCC->BDCR |= RCC_BDCR_LSEON; 
 	
 	// Enter LPRUN mode @1MHz
