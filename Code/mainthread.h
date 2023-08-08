@@ -54,7 +54,7 @@ typedef struct {
 extern MainThread_State_t MainThread_State; 
 extern DAQ_State_t DAQ_State; 
 
-extern void MainThread_Init(void); 
+extern void MainThread_Init(int useAlternateTimebase); 
 
 extern void MainThread_Start(void); 
 
