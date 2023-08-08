@@ -64,6 +64,10 @@ void Sys_Init(void) {
 	GPIOA->MODER = GPIOA->MODER & 0xFFFF0FFF | 0x00005000; 
 	GPIOB->MODER = GPIOB->MODER & 0xFFFFFFFC | 0x00000001; 
 	
+	// Buttons
+	GPIOA->PUPDR = GPIOA->PUPDR & 0xFFFFFFF0 | 0x00000005; 
+	GPIOA->MODER = GPIOA->MODER & 0xFFFFFFF0; 
+	
 	// TODO: properly power up peripherals
 	Sys_SensorOn(); 
 	Sys_BluetoothOn(); 
@@ -134,4 +138,12 @@ void LED_Blue_On(void) {
 void LED_Blue_Off(void) {
 	GPIOB->MODER = GPIOB->MODER & 0xFFFFFFFC | 0x00000001; 
 	GPIOB->BSRR = 0x0001; 
+}
+
+int Button1_Read(void) {
+	return !(GPIOA->IDR & 0x1); 
+}
+
+int Button2_Read(void) {
+	return !(GPIOA->IDR & 0x2); 
 }

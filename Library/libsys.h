@@ -23,4 +23,7 @@ extern void LED_Green_Off(void);
 extern void LED_Blue_On(void); 
 extern void LED_Blue_Off(void); 
 
+extern int Button1_Read(void); 
+extern int Button2_Read(void); 
+
 #endif

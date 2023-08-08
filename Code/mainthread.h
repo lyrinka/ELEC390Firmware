@@ -38,6 +38,7 @@ typedef struct {
 	LWT_t lwt; 
 	volatile unsigned int flags; 
 	unsigned int seconds; 
+	unsigned int demoFakeUVDataWeight; 
 } MainThread_State_t; 
 
 typedef struct {
@@ -57,6 +58,7 @@ extern void MainThread_Init(void);
 
 extern void MainThread_Start(void); 
 
+extern DAQ_OptiMeasCM_t MainThread_ProcessFakeUVData(DAQ_OptiMeasCM_t input); 
 
 __weak void DAQ_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int timestamp); 
 __weak void DAQ_SubmitBatteryMeas(DAQ_BattMeas_t meas); 

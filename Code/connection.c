@@ -35,6 +35,7 @@ void DAQ_SubmitBatteryMeas(DAQ_BattMeas_t meas) {
 // In MainThread LWT context
 void DAQ_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int second) {
 	if(!BleThread_IsConnected()) return; 
+	meas = MainThread_ProcessFakeUVData(meas); 
 	Packet_t packet; 
 	unsigned char payload[PacketInNewOpticalSample_Length]; 
 	Packet_New(&packet, payload, PacketInNewOpticalSample_Length); 
@@ -49,6 +50,7 @@ void DAQ_SubmitRTOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int second) {
 // In MainThread LWT context
 void DAQ_SubmitEstimatedOpticalMeas(DAQ_OptiMeasCM_t meas, unsigned int sample) {
 	if(!BleThread_IsConnected()) return; 
+	meas = MainThread_ProcessFakeUVData(meas); 
 	Packet_t packet; 
 	unsigned char payload[PacketInNewOpticalEstimation_Length]; 
 	Packet_New(&packet, payload, PacketInNewOpticalEstimation_Length); 
@@ -97,6 +99,7 @@ void Connection_HandlePacketOutRequestSyncData(Packet_t * packet) {
 			meas.uv = 0xFF; 
 			meas.vis = 0xFF; 
 		}
+		else meas = MainThread_ProcessFakeUVData(meas); 
 		PacketInSyncData_WriteSample(
 			packet, 
 			i, 

@@ -12,6 +12,8 @@
 MainThread_State_t MainThread_State; 
 DAQ_State_t DAQ_State; 
 
+volatile int DEMO_FAKE_UV_WEIGHT = 50; 
+
 /* -------- LWT instantiation -------- */
 #define MAINTHREAD_STACK_SIZE 512
 unsigned char MainThread_Stack[MAINTHREAD_STACK_SIZE]; 
@@ -19,6 +21,7 @@ unsigned char MainThread_Stack[MAINTHREAD_STACK_SIZE];
 void MainThread_Init(void) {
 	// Data structure
 	MainThread_State.seconds = 0; 
+	MainThread_State.demoFakeUVDataWeight = 0; 
 	
 	// Event system
 	void MainThread_EventInit(void); 
@@ -186,6 +189,24 @@ DAQ_OptiMeasCM_t DAQ_Compress(DAQ_OptiMeas_t meas) {
 	return meas2; 
 }
 
+DAQ_OptiMeas_t DAQ_Decompress(DAQ_OptiMeasCM_t input) {
+	DAQ_OptiMeas_t output = (DAQ_OptiMeas_t){0, 0}; 
+	if(input.uv == 0xFF && input.vis == 0xFF) return output; 
+	// Truncate 8
+	output.uv = input.uv; 
+	// Compressed 4-4
+	output.vis = ((input.vis >> 4) & 0xF) << (input.vis & 0xF); 
+	return output; 
+}
+
+DAQ_OptiMeasCM_t MainThread_ProcessFakeUVData(DAQ_OptiMeasCM_t input) {
+	if(MainThread_State.demoFakeUVDataWeight == 0) return input; 
+	DAQ_OptiMeas_t meas = DAQ_Decompress(input); 
+	meas.uv = meas.vis / MainThread_State.demoFakeUVDataWeight; 
+	if(meas.uv > 220) meas.uv = 220; // Cap at around 20 UVI
+	return DAQ_Compress(meas); 
+}
+
 
 /* -------- Main thread logic -------- */
 void DAQ_PerformOpticalMeasurements(void) {
@@ -299,16 +320,38 @@ void MainThread_Entry(void) {
 			DAQ_SubmitBatteryMeas(DAQ_State.battery); 
 		}
 		
-		// Test LED handling
-		if(!(MainThread_State.seconds % 10)) {
-			if(BleThread_IsConnected()) {
-				LED_Green_On(); 
-				MainLooper_SubmitDelayed(LED_Green_Off, 20); 
+		// Button handling
+		if(Button1_Read() && Button2_Read()) {
+			if(MainThread_State.demoFakeUVDataWeight == 0) {
+				MainThread_State.demoFakeUVDataWeight = DEMO_FAKE_UV_WEIGHT; 
+				LED_Blue_On(); 
+				LED_Red_On(); 
+				MainLooper_SubmitDelayed(LED_Blue_Off, 300); 
+				MainLooper_SubmitDelayed(LED_Red_Off, 300); 
 			}
 			else {
+				MainThread_State.demoFakeUVDataWeight = 0; 
 				LED_Blue_On(); 
-				MainLooper_SubmitDelayed(LED_Blue_Off, 20); 
+				LED_Green_On(); 
+				MainLooper_SubmitDelayed(LED_Blue_Off, 300); 
+				MainLooper_SubmitDelayed(LED_Green_Off, 300); 
 			}
+		}
+		else {
+		
+			// Test LED handling
+			int ledDelay = !MainThread_State.demoFakeUVDataWeight ? 20 : 3; 
+			if(!(MainThread_State.seconds % ledDelay)) {
+				if(BleThread_IsConnected()) {
+					LED_Green_On(); 
+					MainLooper_SubmitDelayed(LED_Green_Off, 20); 
+				}
+				else {
+					LED_Blue_On(); 
+					MainLooper_SubmitDelayed(LED_Blue_Off, 20); 
+				}
+			}
+			
 		}
 		
 		// Update timers
