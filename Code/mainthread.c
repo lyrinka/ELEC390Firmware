@@ -240,7 +240,7 @@ int DAQ_PerformBatteryMeasurements(void) {
 	MainThread_Delay(10); 
 	ADC_Convert(); 
 	MainThread_Delay(10); 
-	unsigned int mv = ADC_Cleanup(); 
+	int mv = ADC_Cleanup(); 
 	DAQ_State.battery.unfilteredVoltage = mv; 
 	if(DAQ_State.battery.voltage != 0) 
 		mv = (((unsigned int)DAQ_State.battery.voltage * 768) + mv * 256) >> 10; 
