@@ -19,7 +19,7 @@ int main(void) {
 	// LSE timeout handling
 	int lseTimeoutCounter = 0; 
 	int useAlternateTimebase = 0; 
-	LED_Red_On(); 
+	LED_Green_On(); 
 	while(!Sys_LSEReady()) {
 		lseTimeoutCounter++; 
 		if(lseTimeoutCounter > 100000) {
@@ -27,7 +27,7 @@ int main(void) {
 			break; 
 		}
 	}
-	LED_Red_Off(); 
+	LED_Green_Off(); 
 	
 	// System initialization
 	LWT_Init(); 

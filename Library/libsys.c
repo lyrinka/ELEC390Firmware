@@ -69,6 +69,10 @@ void Sys_Init(void) {
 	GPIOA->MODER = GPIOA->MODER & 0xFFFF0FFF | 0x00005000; 
 	GPIOB->MODER = GPIOB->MODER & 0xFFFFFFFC | 0x00000001; 
 	
+	// Buttons
+	GPIOA->PUPDR = GPIOA->PUPDR & 0xFFFFFFF0 | 0x00000005; 
+	GPIOA->MODER = GPIOA->MODER & 0xFFFFFFF0; 
+	
 	// TODO: properly power up peripherals
 	Sys_SensorOn(); 
 	Sys_BluetoothOn(); 
@@ -78,13 +82,35 @@ int Sys_LSEReady(void) {
 	return (RCC->BDCR & RCC_BDCR_LSERDY) ? 1 : 0; 
 }
 
-void Sys_EnterSleepMode(void) {
-	__WFI(); 
-}
-
-void Sys_EnterStopMode(void) {
-	// TODO: implement this
-	__WFI(); 
+void Sys_Shutdown(void) {
+	for(;;) {
+		__disable_irq(); 
+		// Turn off LSE
+		RCC->BDCR &= ~0x1; 
+		// Set IO state
+		// PA: DDDD DDUU DUUD DUDD
+		// PB: UDDD DDDD DDD- ---D
+		// PC: ---- --DD ---- -DDD
+		// PD: DDDD ---- ---- ----
+		// PF: DD-- ---- ---- ----
+		PWR->PUCRA = 0x26C0; 
+		PWR->PDCRA = 0xD93F; 
+		PWR->PUCRB = 0x0001; 
+		PWR->PDCRB = 0x87FE; 
+		PWR->PUCRC = 0x0000; 
+		PWR->PDCRC = 0xE0C0; 
+		PWR->PUCRD = 0x0000; 
+		PWR->PDCRD = 0x000F; 
+		PWR->PUCRF = 0x0000; 
+		PWR->PDCRF = 0x0003; 
+		// Prepare mode entry
+		PWR->SCR = 0x3F; 
+		PWR->CR3 |= 0x0400; 
+		PWR->CR1 = PWR->CR1 & 0xFFFFFFF8 | 0x00000004; 
+		// Enter shutdown mode
+		SCB->SCR = 0x04; 
+		__WFI(); 
+	}
 }
 
 void Sys_SensorOn(void) {
@@ -139,4 +165,12 @@ void LED_Blue_On(void) {
 void LED_Blue_Off(void) {
 	GPIOB->MODER = GPIOB->MODER & 0xFFFFFFFC | 0x00000001; 
 	GPIOB->BSRR = 0x0001; 
+}
+
+int Button1_Read(void) {
+	return !(GPIOA->IDR & 0x1); 
+}
+
+int Button2_Read(void) {
+	return !(GPIOA->IDR & 0x2); 
 }

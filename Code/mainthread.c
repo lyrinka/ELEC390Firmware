@@ -278,6 +278,15 @@ void DAQ_FinalizeOpticalEstimations(void) {
 	DAQ_State.estOptical = (DAQ_OptiMeas_t){0, 0}; 
 }
 
+void MainThread_HandleDeviceTurnOff(void) {
+	static unsigned char g_consecutives = 0; 
+	if(Button1_Read() && Button2_Read()) g_consecutives++; 
+	else g_consecutives = 0; 
+	if(g_consecutives < 5) return; 
+	LED_Red_On(); 
+	MainLooper_SubmitDelayed(Sys_Shutdown, 500); 
+}
+
 void MainThread_Entry(void) {
 	Storage_Init(); 
 	
@@ -321,6 +330,9 @@ void MainThread_Entry(void) {
 				MainLooper_SubmitDelayed(LED_Blue_Off, 20); 
 			}
 		}
+		
+		// Device turn-off handling
+		MainThread_HandleDeviceTurnOff(); 
 		
 		// Update timers
 		++MainThread_State.seconds; 
