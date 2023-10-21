@@ -339,7 +339,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>DEMO_MODE</Define>
+              <Define></Define>
               <Undefine></Undefine>
               <IncludePath>.\Library;.\Code</IncludePath>
             </VariousControls>
